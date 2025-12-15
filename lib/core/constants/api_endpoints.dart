@@ -1,6 +1,7 @@
 class ApiEndpoints {
-  static const String baseUrl = 'https://manage.hockeysocialnetwork.com/api';
-  // static const String vehicleTypeUrl = '$baseUrl/vehicle-types';
+  // For Samsung Galaxy S25 (real device): using your computer's current IP address
+  static const String baseUrl = 'http://192.168.1.22:8000/api';
+  static const String extractText = '$baseUrl/extract-text/';
   // static const String bannerUrl = '$baseUrl/banners';
 
   // //all user types

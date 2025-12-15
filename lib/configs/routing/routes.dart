@@ -28,6 +28,10 @@ enum Routes {
   coachAvailabilityScreen('/coach-availability'),
   chatroomScreen('/chatroom'),
   chatroomDetailsScreen('/chatroom-details'),
+  cameraScreen('/camera'),
+  batchPhotoPreviewScreen('/batch-photo-preview'),
+  imageEvaluationScreen('/image-evaluation'),
+  evaluationResultsScreen('/evaluation-results'),
   favoritePostsScreen('/favorite-posts'),
   reportScreen('/report'),
   promotionsScreen('/promotions'),
@@ -39,8 +43,7 @@ enum Routes {
   athleteBookingsScreen('/athlete-bookings'),
   notificationScreen('/notification'),
   buyMeetingPackageScreen('/buy-meeting-package'),
-  followersFollowingScreen('/followers-following'),
-  ;
+  followersFollowingScreen('/followers-following');
 
   const Routes(this.path);
   final String path;

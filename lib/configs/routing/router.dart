@@ -1,7 +1,12 @@
+import 'package:autograde_mobile/configs/routing/routes.dart';
+import 'package:autograde_mobile/features/camera/batch_photo_preview_screen.dart';
+import 'package:autograde_mobile/features/camera/camera_screen.dart';
+import 'package:autograde_mobile/features/camera/evaluation_results_screen.dart';
+import 'package:autograde_mobile/features/camera/image_evaluation_screen.dart';
 import 'package:go_router/go_router.dart';
 
 final router = GoRouter(
-  //initialLocation: Routes.splashScreen.path,
+  initialLocation: Routes.cameraScreen.path,
   routes: [
     // GoRoute(
     //   path: Routes.splashScreen.path,
@@ -47,6 +52,31 @@ final router = GoRouter(
     //     );
     //   },
     // ),
+    GoRoute(
+      path: Routes.cameraScreen.path,
+      builder: (context, state) => const CameraScreen(),
+    ),
+    GoRoute(
+      path: Routes.batchPhotoPreviewScreen.path,
+      builder: (context, state) {
+        final List<String> imagePaths = (state.extra as List<String>?) ?? [];
+        return BatchPhotoPreviewScreen(imagePaths: imagePaths);
+      },
+    ),
+    GoRoute(
+      path: Routes.imageEvaluationScreen.path,
+      builder: (context, state) {
+        final List<String> imagePaths = (state.extra as List<String>?) ?? [];
+        return ImageEvaluationScreen(imagePaths: imagePaths);
+      },
+    ),
+    GoRoute(
+      path: Routes.evaluationResultsScreen.path,
+      builder: (context, state) {
+        final String imagePath = (state.extra as String?) ?? '';
+        return EvaluationResultsScreen(imagePath: imagePath);
+      },
+    ),
     // GoRoute(
     //   path: Routes.dashboardScreen.path,
     //   builder: (context, state) => const DashboardScreen(),

@@ -1,7 +1,12 @@
+import 'dart:io';
+
 import 'package:autograde_mobile/configs/service_locator.dart';
 import 'package:autograde_mobile/core/api/models/api_base_message_model.dart';
+import 'package:autograde_mobile/core/constants/api_endpoints.dart';
 import 'package:autograde_mobile/core/cubits/auth/auth_cubit.dart';
 import 'package:autograde_mobile/core/data_source/base_remote_data_source.dart';
+import 'package:autograde_mobile/features/camera/models/extract_text_model.dart';
+import 'package:dio/dio.dart';
 
 class AppRemoteDataSource extends BaseRemoteDataSource {
   @override
@@ -19,6 +24,23 @@ class AppRemoteDataSource extends BaseRemoteDataSource {
       method: RequestType.post,
       transformer: (data) =>
           ApiBaseMessageModel.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  Future<BaseResponse<EvalAnswerModel>> submitAnswer({
+    required File image,
+  }) async {
+    return request(
+      endpoint: ApiEndpoints.extractText,
+      method: RequestType.post,
+      data: FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          image.path,
+          filename: image.path.split('/').last,
+        ),
+      }),
+      transformer: (data) =>
+          EvalAnswerModel.fromJson(data as Map<String, dynamic>),
     );
   }
 
