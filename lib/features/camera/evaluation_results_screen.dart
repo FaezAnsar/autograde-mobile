@@ -212,7 +212,8 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen> {
                               ),
                               SizedBox(height: 12.h),
                               Text(
-                                state.data.eval,
+                                state.data.eval ??
+                                    "No evaluation result provided.",
                                 style: TextStyle(
                                   fontSize: 16.sp,
                                   color: Colors.black87,

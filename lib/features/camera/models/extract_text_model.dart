@@ -6,11 +6,11 @@ class EvalAnswerModel extends ApiBaseMessageModel {
   EvalAnswerModel.fromJson(Map<String, dynamic> json)
     : this(
         message: ApiBaseMessageModel.fromJson(json).message,
-        eval: json['evaluation'] as String,
+        eval: json['extracted_text']['evaluation'] as String?,
       );
 
   @override
   Map<String, dynamic> toJson() => {'message': message, 'evaluation': eval};
 
-  final String eval;
+  final String? eval;
 }
