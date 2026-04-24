@@ -7,6 +7,7 @@ import 'package:autograde_mobile/core/cubits/auth/auth_cubit.dart';
 import 'package:autograde_mobile/core/data_source/base_remote_data_source.dart';
 import 'package:autograde_mobile/features/camera/models/extract_text_model.dart';
 import 'package:dio/dio.dart';
+import 'package:fpdart/fpdart.dart';
 
 class AppRemoteDataSource extends BaseRemoteDataSource {
   @override
@@ -30,18 +31,32 @@ class AppRemoteDataSource extends BaseRemoteDataSource {
   Future<BaseResponse<EvalAnswerModel>> submitAnswer({
     required File image,
   }) async {
-    return request(
-      endpoint: ApiEndpoints.extractText,
-      method: RequestType.post,
-      data: FormData.fromMap({
-        'file': await MultipartFile.fromFile(
-          image.path,
-          filename: image.path.split('/').last,
-        ),
-      }),
-      transformer: (data) =>
-          EvalAnswerModel.fromJson(data as Map<String, dynamic>),
-    );
+    //    return request(
+    //   endpoint: ApiEndpoints.extractText,
+    //   method: RequestType.post,
+    //   data: FormData.fromMap({
+    //     'file': await MultipartFile.fromFile(
+    //       image.path,
+    //       filename: image.path.split('/').last,
+    //     ),
+    //   }),
+    //   transformer: (data) =>
+    //       EvalAnswerModel.fromJson(data as Map<String, dynamic>),
+    // );
+    await Future.delayed(const Duration(seconds: 2));
+
+    final mockResponse = {
+      'success': true,
+      'extracted_text': {
+        'success': true,
+        'evaluation':
+            'Score: 4/10 marks\n\nSuggestions for Improvement:\n- **Elaborate on the "detailed account" of Zakat:** Your definition is a good starting point, but a "detailed account" requires much more. You need to include:\n    * **Conditions for payment:** Explain the concept of *nisab* (the minimum threshold of wealth) and *haul* (the passing of one lunar year).\n    * **Types of wealth subject to Zakat:** Mention specific categories like gold, silver, cash, business goods, livestock, and agricultural produce.\n    * **Rates of Zakat:** State the percentage rates for different types of wealth (e.g., 2.5% on accumulated wealth, 5% or 10% on agricultural produce).\n    * **Eligibility for Zakat:** Briefly mention the eight categories of recipients outlined in the Quran.\n    * **Historical context:** You could also mention that Zakat was obligatory in previous nations, as indicated in the examiner guidance.\n- **Add more specific spiritual benefits:** While you correctly identified purification of the heart, also mention "earning Allah\'s forgiveness" and "fulfilling a fundamental Pillar of Islam."\n- **Add more specific social benefits:** You covered social welfare and poverty reduction well. To make it more comprehensive, explicitly mention how Zakat "balances the economy" and "promotes societal peace" by fostering goodwill between the rich and the poor.',
+        'message': 'Evaluation completed successfully.',
+      },
+      'message': 'Text extracted successfully.',
+    };
+
+    return right(EvalAnswerModel.fromJson(mockResponse));
   }
 
   //----------------------------Posts----------------------------//

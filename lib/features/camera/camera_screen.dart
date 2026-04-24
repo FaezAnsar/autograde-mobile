@@ -18,6 +18,7 @@ class CameraScreen extends HookWidget {
   Widget build(BuildContext context) {
     final cameraController = useState<CameraController?>(null);
     final isInitialized = useState(false);
+    final cameraError = useState<String?>(null);
     final isSingleMode = useState(true); // true for single, false for batch
     final capturedImages = useState<List<String>>([]);
     final selectedFiles = useState<List<String>>([]);
@@ -30,7 +31,7 @@ class CameraScreen extends HookWidget {
 
     // Initialize camera
     useEffect(() {
-      _initializeCamera(cameraController, isInitialized);
+      _initializeCamera(cameraController, isInitialized, cameraError);
       return () {
         cameraController.value?.dispose();
       };
@@ -40,8 +41,49 @@ class CameraScreen extends HookWidget {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Camera preview or captured image preview
-          if (showPreview.value && capturedImages.value.isNotEmpty)
+          // Camera preview, preview mode, or camera error message
+          if (cameraError.value != null)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black,
+                child: Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 34.w),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          color: Colors.red[400],
+                          size: 48.sp,
+                        ),
+                        SizedBox(height: 16.h),
+                        Text(
+                          'Camera unavailable',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 22.sp,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: 12.h),
+                        Text(
+                          cameraError.value!,
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 15.sp,
+                            height: 1.5,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            )
+          else if (showPreview.value && capturedImages.value.isNotEmpty)
             // Show captured image preview
             Positioned.fill(
               child: Image.file(
@@ -435,16 +477,22 @@ class CameraScreen extends HookWidget {
 Future<void> _initializeCamera(
   ValueNotifier<CameraController?> controllerNotifier,
   ValueNotifier<bool> isInitializedNotifier,
+  ValueNotifier<String?> errorNotifier,
 ) async {
   // Request camera permission
   final cameraPermission = await Permission.camera.request();
   if (cameraPermission != PermissionStatus.granted) {
+    errorNotifier.value =
+        'Camera permission denied. Please allow camera access to use Autograde.';
     return;
   }
 
   try {
     final cameras = await availableCameras();
-    if (cameras.isEmpty) return;
+    if (cameras.isEmpty) {
+      errorNotifier.value = 'No camera device was found on this device.';
+      return;
+    }
 
     final controller = CameraController(
       cameras.first,
@@ -457,6 +505,8 @@ Future<void> _initializeCamera(
     isInitializedNotifier.value = true;
   } catch (e) {
     debugPrint('Camera initialization error: $e');
+    errorNotifier.value =
+        'Unable to start the camera. Please restart the app or try again later.';
   }
 }
 

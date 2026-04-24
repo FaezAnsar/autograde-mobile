@@ -3,10 +3,11 @@ import 'package:autograde_mobile/features/camera/batch_photo_preview_screen.dart
 import 'package:autograde_mobile/features/camera/camera_screen.dart';
 import 'package:autograde_mobile/features/camera/evaluation_results_screen.dart';
 import 'package:autograde_mobile/features/camera/image_evaluation_screen.dart';
+import 'package:autograde_mobile/features/splash_screen.dart';
 import 'package:go_router/go_router.dart';
 
 final router = GoRouter(
-  initialLocation: Routes.cameraScreen.path,
+  initialLocation: Routes.splashScreen.path,
   routes: [
     // GoRoute(
     //   path: Routes.splashScreen.path,
@@ -52,6 +53,10 @@ final router = GoRouter(
     //     );
     //   },
     // ),
+    GoRoute(
+      path: Routes.splashScreen.path,
+      builder: (context, state) => const SplashScreen(),
+    ),
     GoRoute(
       path: Routes.cameraScreen.path,
       builder: (context, state) => const CameraScreen(),
