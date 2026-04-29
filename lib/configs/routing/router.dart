@@ -1,8 +1,11 @@
 import 'package:autograde_mobile/configs/routing/routes.dart';
 import 'package:autograde_mobile/features/camera/batch_photo_preview_screen.dart';
 import 'package:autograde_mobile/features/camera/camera_screen.dart';
+import 'package:autograde_mobile/features/auth/login_screen.dart';
+import 'package:autograde_mobile/features/auth/signup_screen.dart';
 import 'package:autograde_mobile/features/camera/evaluation_results_screen.dart';
 import 'package:autograde_mobile/features/camera/image_evaluation_screen.dart';
+import 'package:autograde_mobile/features/home/home_screen.dart';
 import 'package:autograde_mobile/features/splash_screen.dart';
 import 'package:go_router/go_router.dart';
 
@@ -56,6 +59,21 @@ final router = GoRouter(
     GoRoute(
       path: Routes.splashScreen.path,
       builder: (context, state) => const SplashScreen(),
+    ),
+    GoRoute(
+      path: Routes.signInScreen.path,
+      builder: (context, state) => const LoginScreen(),
+    ),
+    GoRoute(
+      path: Routes.signUpScreen.path,
+      builder: (context, state) => const SignUpScreen(),
+    ),
+    GoRoute(
+      path: Routes.homeScreen.path,
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>?;
+        return HomeScreen(name: extra?['name'] as String?);
+      },
     ),
     GoRoute(
       path: Routes.cameraScreen.path,

@@ -5,6 +5,7 @@ enum Routes {
   signUpOtpScreen('/signup-otp'),
   signUpFinishScreen('/signup-finish'),
   signInScreen('/signin'),
+  homeScreen('/home'),
   forgotPasswordScreen('/forgot-password'),
   forgotPasswordOtpScreen('/forgot-password-otp'),
   forgotPasswordNewPasswordScreen('/forgot-password-new-password'),

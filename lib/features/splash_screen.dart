@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:autograde_mobile/configs/routing/routes.dart';
-import 'package:autograde_mobile/core/constants/app_assets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -14,20 +13,21 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-  bool _showContent = true;
+  final bool _showContent = true;
 
   @override
   void initState() {
     super.initState();
-    Timer(const Duration(milliseconds: 2800), () {
+    Timer(const Duration(milliseconds:5000), () {
       if (!mounted) return;
-      context.go(Routes.cameraScreen.path);
+      context.go(Routes.signInScreen.path);
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F7F5),
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -35,7 +35,7 @@ class _SplashScreenState extends State<SplashScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF141E30), Color(0xFF243B55)],
+            colors: [Color(0xFFF8F7F5), Color(0xFFFFFFFF)],
           ),
         ),
         child: SafeArea(
@@ -83,7 +83,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   Text(
                     'AutoGrade',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: const Color(0xFF1A1A1A),
                       fontSize: 34.sp,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.2,
@@ -94,7 +94,7 @@ class _SplashScreenState extends State<SplashScreen> {
                     'Instant answer checks with smart improvement tips',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Colors.white70,
+                      color: const Color(0xFF7C7C7C),
                       fontSize: 16.sp,
                       height: 1.4,
                     ),
@@ -103,13 +103,13 @@ class _SplashScreenState extends State<SplashScreen> {
                   SizedBox(
                     width: 180.w,
                     child: LinearProgressIndicator(
-                      color: Colors.white,
-                      backgroundColor: Colors.white24,
+                      color: const Color(0xFF1A1A1A),
+                      backgroundColor: const Color(0xFFD9D9D9),
                     ),
                   ),
                   SizedBox(height: 22.h),
                   ElevatedButton(
-                    onPressed: () => context.go(Routes.cameraScreen.path),
+                    onPressed: () => context.go(Routes.signInScreen.path),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: Colors.black,
