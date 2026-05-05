@@ -1,6 +1,10 @@
 import 'dart:io';
 
 import 'package:autograde_mobile/configs/routing/routes.dart';
+import 'package:autograde_mobile/configs/service_locator.dart';
+import 'package:autograde_mobile/core/data_source/app_remote_data_source.dart';
+import 'package:autograde_mobile/core/utils/helpers.dart';
+import 'package:autograde_mobile/features/home/models/history_item_model.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -18,32 +22,39 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String? _selectedImagePath;
   String? _selectedPdfName;
+  String? _selectedSubject;
   int _bulkUploadCount = 0;
   int _bottomNavIndex = 0;
 
-  final List<Map<String, String>> _historyItems = [
-    {
-      'title': 'report1.pdf',
-      'subtitle': 'Dec 09, 2025',
-      'status': 'Checked',
-    },
-    {
-      'title': 'skin_scan.jpg',
-      'subtitle': 'Dec 08, 2025',
-      'status': 'Checked',
-    },
-    {
-      'title': 'assignment2.pdf',
-      'subtitle': 'Dec 05, 2025',
-      'status': 'Checked',
-    },
-  ];
+  static const Map<String, String> _subjectOptions = {
+    'Islamiat': 'isl',
+    'Chemistry': 'chem',
+    'Math': 'math',
+    'Physics': 'physics',
+  };
+
+  List<HistoryItemModel> _historyItems = [];
+  bool _isHistoryLoading = true;
+  String? _historyError;
 
   Future<void> _pickImage() async {
+    if (_selectedSubject == null) {
+      showSnackBar(context, 'Please select a subject before choosing an image.');
+      return;
+    }
+
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    if (!mounted) return;
     if (image != null) {
       setState(() => _selectedImagePath = image.path);
+      context.push(
+        Routes.evaluationResultsScreen.path,
+        extra: {
+          'path': image.path,
+          'subject': _selectedSubject!,
+        },
+      );
     }
   }
 
@@ -58,12 +69,29 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _pickPdf() async {
+    if (_selectedSubject == null) {
+      showSnackBar(context, 'Please select a subject before choosing a file.');
+      return;
+    }
+
     final FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
+      allowMultiple: false,
     );
+    if (!mounted) return;
     if (result != null && result.files.isNotEmpty) {
       setState(() => _selectedPdfName = result.files.first.name);
+      final selectedPath = result.files.first.path;
+      if (selectedPath != null) {
+        context.push(
+          Routes.evaluationResultsScreen.path,
+          extra: {
+            'path': selectedPath,
+            'subject': _selectedSubject!,
+          },
+        );
+      }
     }
   }
 
@@ -477,9 +505,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildHistoryCard(Map<String, String> item) {
-    final bool isPdf = item['title']?.endsWith('.pdf') == true;
-    final bool isCompleted = item['status'] == 'Completed';
+  Widget _buildHistoryCard(HistoryItemModel item) {
+    final bool isPdf = item.paperCode.toLowerCase() == 'pdf';
+    final bool isCompleted = true;
 
     return Padding(
       padding: EdgeInsets.only(bottom: 8.h),
@@ -517,7 +545,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    item['title'] ?? '',
+                    item.questionId ?? '',
                     style: TextStyle(
                         fontSize: 13.sp,
                         fontWeight: FontWeight.w600,
@@ -526,7 +554,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   SizedBox(height: 2.h),
                   Text(
-                    item['subtitle'] ?? '',
+                    item.createdAt ?? '',
                     style: TextStyle(
                         fontSize: 11.sp, color: const Color(0xFFAAAAAA)),
                   ),
@@ -543,7 +571,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 borderRadius: BorderRadius.circular(8.r),
               ),
               child: Text(
-                item['status'] ?? '',
+                'Checked' ?? '',
                 style: TextStyle(
                   fontSize: 11.sp,
                   fontWeight: FontWeight.w600,

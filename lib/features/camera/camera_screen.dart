@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:autograde_mobile/configs/routing/routes.dart';
+import 'package:autograde_mobile/core/utils/helpers.dart';
 import 'package:camera/camera.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -22,6 +23,7 @@ class CameraScreen extends HookWidget {
     final isSingleMode = useState(true); // true for single, false for batch
     final capturedImages = useState<List<String>>([]);
     final selectedFiles = useState<List<String>>([]);
+    final selectedSubject = useState<String?>(null);
     final showPreview = useState(false); // Show image preview in single mode
 
     // Debug logging
@@ -143,6 +145,39 @@ class CameraScreen extends HookWidget {
               ),
             ),
           ),
+          Positioned(
+            top: 120.h,
+            left: 20.w,
+            right: 20.w,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Subject',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(height: 10.h),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildSubjectChip(selectedSubject, 'Islamiat', 'isl'),
+                      SizedBox(width: 10.w),
+                      _buildSubjectChip(selectedSubject, 'Chemistry', 'chem'),
+                      SizedBox(width: 10.w),
+                      _buildSubjectChip(selectedSubject, 'Math', 'math'),
+                      SizedBox(width: 10.w),
+                      _buildSubjectChip(selectedSubject, 'Physics', 'physics'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
 
           // Mode selector (Single/Batch) - hide in preview mode
           if (!showPreview.value)
@@ -185,8 +220,11 @@ class CameraScreen extends HookWidget {
                   color: Colors.transparent,
                   child: InkWell(
                     borderRadius: BorderRadius.circular(28.r),
-                    onTap: () =>
-                        _sendForEvaluation(capturedImages.value.first, context),
+                    onTap: () => _sendForEvaluation(
+                      capturedImages.value.first,
+                      selectedSubject.value ?? '',
+                      context,
+                    ),
                     child: Center(
                       child: Text(
                         'Send for Evaluation',
@@ -276,7 +314,11 @@ class CameraScreen extends HookWidget {
                         _buildControlButton(
                           icon: Icons.description,
                           label: 'Documents',
-                          onTap: () => _selectDocuments(selectedFiles),
+                          onTap: () => _selectDocuments(
+                            selectedFiles,
+                            selectedSubject.value ?? '',
+                            context,
+                          ),
                         ),
 
                         // Camera capture button (center)
@@ -417,6 +459,36 @@ class CameraScreen extends HookWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSubjectChip(
+    ValueNotifier<String?> selectedSubject,
+    String label,
+    String value,
+  ) {
+    final selected = selectedSubject.value == value;
+    return GestureDetector(
+      onTap: () => selectedSubject.value = value,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
+        decoration: BoxDecoration(
+          color: selected ? Colors.white : Colors.white24,
+          borderRadius: BorderRadius.circular(24.r),
+          border: Border.all(
+            color: selected ? Colors.tealAccent : Colors.white70,
+            width: 1.w,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.black : Colors.white,
+            fontSize: 12.sp,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ),
     );
   }
@@ -564,33 +636,63 @@ Future<void> _selectFromGallery(
   }
 }
 
-Future<void> _selectDocuments(ValueNotifier<List<String>> selectedFiles) async {
+Future<void> _selectDocuments(
+  ValueNotifier<List<String>> selectedFiles,
+  String subject,
+  BuildContext context,
+) async {
   try {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'doc', 'docx'],
-      allowMultiple: true,
+      allowMultiple: false,
     );
+    if (!context.mounted) return;
 
     if (result != null && result.files.isNotEmpty) {
-      final newPaths = result.files
-          .where((file) => file.path != null)
-          .map((file) => file.path!)
-          .toList();
+      final selectedPath = result.files.first.path;
+      if (selectedPath == null) return;
 
-      selectedFiles.value = [...selectedFiles.value, ...newPaths];
-      debugPrint('${newPaths.length} documents selected');
+      selectedFiles.value = [selectedPath];
+      debugPrint('Document selected: $selectedPath');
+
+      if (subject.isEmpty) {
+        showSnackBar(context, 'Please select a subject before evaluating the document.');
+        return;
+      }
+
+      context.push(
+        Routes.evaluationResultsScreen.path,
+        extra: {
+          'path': selectedPath,
+          'subject': subject,
+        },
+      );
     }
   } catch (e) {
     debugPrint('Error selecting documents: $e');
   }
 }
 
-void _sendForEvaluation(String imagePath, BuildContext context) {
+void _sendForEvaluation(
+  String imagePath,
+  String subject,
+  BuildContext context,
+) {
+  if (subject.isEmpty) {
+    showSnackBar(context, 'Please select a subject before evaluating the image.');
+    return;
+  }
+
   debugPrint('Sending image for evaluation: $imagePath');
 
-  // Navigate to evaluation results screen
-  context.push(Routes.evaluationResultsScreen.path, extra: imagePath);
+  context.push(
+    Routes.evaluationResultsScreen.path,
+    extra: {
+      'path': imagePath,
+      'subject': subject,
+    },
+  );
 }
 
 void _showDiscardDialog(

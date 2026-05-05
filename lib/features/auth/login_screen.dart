@@ -1,6 +1,12 @@
 import 'package:autograde_mobile/configs/routing/routes.dart';
+import 'package:autograde_mobile/configs/service_locator.dart';
+import 'package:autograde_mobile/core/api/api_exception.dart';
+import 'package:autograde_mobile/core/cubits/auth/auth_cubit.dart';
+import 'package:autograde_mobile/core/repositories/auth_repository.dart';
+import 'package:autograde_mobile/core/utils/user_type.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:fpdart/fpdart.dart' as fpdart;
 import 'package:go_router/go_router.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -12,7 +18,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   late AnimationController _animationController;
   bool _isLoading = false;
@@ -30,29 +36,63 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
     _animationController.dispose();
     super.dispose();
   }
 
-  void _login() {
-    if (_formKey.currentState?.validate() ?? false) {
-      setState(() => _isLoading = true);
-      
-      // Simulate network delay
-      Future.delayed(const Duration(milliseconds: 800), () {
-        if (mounted) {
-          context.go(
-            Routes.homeScreen.path,
-            extra: {
-              'name': 'Learner',
-              'email': _emailController.text.trim(),
-            },
-          );
-        }
-      });
+  Future<void> _login() async {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
     }
+
+    setState(() => _isLoading = true);
+
+    final fpdart.Either<ApiException, dynamic> result = await locator<AuthRepository>()
+        .login(
+      username: _usernameController.text.trim(),
+      password: _passwordController.text.trim(),
+    );
+
+    if (!mounted) return;
+
+    result.match(
+      (error) {
+        setState(() => _isLoading = false);
+        _showError(error.message);
+      },
+      (loginModel) {
+        if (loginModel.user == null || loginModel.token == null) {
+          setState(() => _isLoading = false);
+          _showError('Unexpected login response.');
+          return;
+        }
+
+        locator<AuthCubit>().authorizeUser(
+          token: loginModel.token!,
+          user: loginModel.user!,
+          userType: loginModel.user!.type ?? UserType.parent,
+        );
+
+        context.go(
+          Routes.homeScreen.path,
+          extra: {
+            'name': loginModel.user!.name ?? loginModel.user!.email ?? 'Learner',
+            'email': loginModel.user!.email ?? '',
+          },
+        );
+      },
+    );
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: const Color(0xFFef4444),
+      ),
+    );
   }
 
   @override
@@ -166,19 +206,16 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           key: _formKey,
           child: Column(
             children: [
-              // Email field
+              // Username field
               _buildTextFormField(
-                controller: _emailController,
-                label: 'Email Address',
-                hint: 'you@example.com',
-                keyboardType: TextInputType.emailAddress,
-                icon: Icons.mail_outline_rounded,
+                controller: _usernameController,
+                label: 'Username',
+                hint: 'teacher1',
+                keyboardType: TextInputType.text,
+                icon: Icons.person_outline_rounded,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter your email';
-                  }
-                  if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(value)) {
-                    return 'Please enter a valid email';
+                    return 'Please enter your username';
                   }
                   return null;
                 },

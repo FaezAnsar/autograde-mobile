@@ -23,7 +23,7 @@ class UserModel implements Deserializable, Serializable {
   UserModel.fromJson(Map<String, dynamic> json)
     : this(
         id: json['id'] as int?,
-        name: json['name'] as String?,
+        name: json['name'] as String? ?? json['username'] as String?,
         email: json['email'] as String?,
         phoneNumber: json['phone'] as String?,
         avatarUrl: json['avatar_url'] as String?,

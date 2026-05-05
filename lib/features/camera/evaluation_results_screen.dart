@@ -10,9 +10,14 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 class EvaluationResultsScreen extends StatefulWidget {
-  final String imagePath;
+  final String filePath;
+  final String subject;
 
-  const EvaluationResultsScreen({super.key, required this.imagePath});
+  const EvaluationResultsScreen({
+    super.key,
+    required this.filePath,
+    required this.subject,
+  });
 
   @override
   State<EvaluationResultsScreen> createState() =>
@@ -30,8 +35,8 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen> {
   }
 
   void _submitForEvaluation() {
-    final imageFile = File(widget.imagePath);
-    _evalCubit.evalAns(image: imageFile);
+    final file = File(widget.filePath);
+    _evalCubit.evalAns(file: file, subject: widget.subject);
   }
 
   @override
@@ -243,31 +248,67 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen> {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(18.r),
-                    child: Image.file(
-                      File(widget.imagePath),
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: Colors.grey[100],
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.broken_image,
-                                  color: Colors.grey[400],
-                                  size: 32.sp,
-                                ),
-                                SizedBox(height: 8.h),
-                                Text(
-                                  'Failed to load image',
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 12.sp,
+                    child: Builder(
+                      builder: (context) {
+                        final isImage = RegExp(
+                                r'\.(jpe?g|png|gif|bmp|webp)$',
+                                caseSensitive: false)
+                            .hasMatch(widget.filePath);
+
+                        if (isImage) {
+                          return Image.file(
+                            File(widget.filePath),
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.grey[100],
+                                child: Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.broken_image,
+                                        color: Colors.grey[400],
+                                        size: 32.sp,
+                                      ),
+                                      SizedBox(height: 8.h),
+                                      Text(
+                                        'Failed to load image',
+                                        style: TextStyle(
+                                          color: Colors.grey[600],
+                                          fontSize: 12.sp,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ],
-                            ),
+                              );
+                            },
+                          );
+                        }
+
+                        return Container(
+                          color: Colors.grey[100],
+                          padding: EdgeInsets.all(20.w),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.picture_as_pdf_rounded,
+                                color: Colors.grey[700],
+                                size: 44.sp,
+                              ),
+                              SizedBox(height: 12.h),
+                              Text(
+                                widget.filePath.split(RegExp(r'[\\/]+')).last,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.grey[700],
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
                           ),
                         );
                       },

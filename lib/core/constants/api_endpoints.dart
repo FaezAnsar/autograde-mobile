@@ -1,12 +1,15 @@
 class ApiEndpoints {
   // For Samsung Galaxy S25 (real device): using your computer's current IP address
-  static const String baseUrl = 'https://fyp.restncode.net/api';
+  // static const String baseUrl = 'https://fyp.restncode.net/api';
+  static const String baseUrl = 'http://192.168.18.7:3000/api';
   static const String extractText = '$baseUrl/extract-text/';
+  static const String history = '$baseUrl/history/';
   // static const String bannerUrl = '$baseUrl/banners';
 
   // //all user types
-  // static const String loginUrl = '$baseUrl/login';
-  // static const String logoutUrl = '$baseUrl/logout';
+  static const String signupUrl = '$baseUrl/signup/';
+  static const String loginUrl = '$baseUrl/login/';
+  static const String logoutUrl = '$baseUrl/logout/';
   // static const String forgotPasswordUrl = '$baseUrl/forgot-password';
   // static const String forgotPasswordVerifyOtpUrl =
   //     '$baseUrl/verify-password-reset-otp';

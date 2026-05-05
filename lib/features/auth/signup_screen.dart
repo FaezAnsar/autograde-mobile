@@ -1,6 +1,12 @@
 import 'package:autograde_mobile/configs/routing/routes.dart';
+import 'package:autograde_mobile/configs/service_locator.dart';
+import 'package:autograde_mobile/core/api/api_exception.dart';
+import 'package:autograde_mobile/core/cubits/auth/auth_cubit.dart';
+import 'package:autograde_mobile/core/repositories/auth_repository.dart';
+import 'package:autograde_mobile/core/utils/user_type.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:fpdart/fpdart.dart' as fpdart;
 import 'package:go_router/go_router.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -12,7 +18,7 @@ class SignUpScreen extends StatefulWidget {
 
 class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   late AnimationController _animationController;
@@ -32,46 +38,80 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _animationController.dispose();
     super.dispose();
   }
 
-  void _signup() {
-    if (_formKey.currentState?.validate() ?? false) {
-      if (!_agreedToTerms) {
+  Future<void> _signup() async {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+
+    if (!_agreedToTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Please agree to the Terms of Service',
+            style: TextStyle(fontSize: 14.sp),
+          ),
+          backgroundColor: const Color(0xFFef4444),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    final fpdart.Either<ApiException, dynamic> result = await locator<AuthRepository>()
+        .signup(
+      username: _usernameController.text.trim(),
+      email: _emailController.text.trim(),
+      password: _passwordController.text.trim(),
+    );
+
+    if (!mounted) return;
+
+    result.match(
+      (error) {
+        setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'Please agree to the Terms of Service',
-              style: TextStyle(fontSize: 14.sp),
-            ),
+            content: Text(error.message),
             backgroundColor: const Color(0xFFef4444),
-            duration: const Duration(seconds: 2),
           ),
         );
-        return;
-      }
-
-      setState(() => _isLoading = true);
-
-      // Simulate network delay
-      Future.delayed(const Duration(milliseconds: 800), () {
-        if (mounted) {
-          context.go(
-            Routes.homeScreen.path,
-            extra: {
-              'name': _nameController.text.trim().isEmpty
-                  ? 'New Learner'
-                  : _nameController.text.trim(),
-              'email': _emailController.text.trim(),
-            },
+      },
+      (loginModel) {
+        if (loginModel.user == null || loginModel.token == null) {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Unexpected signup response.'),
+              backgroundColor: Color(0xFFef4444),
+            ),
           );
+          return;
         }
-      });
-    }
+
+        locator<AuthCubit>().authorizeUser(
+          token: loginModel.token!,
+          user: loginModel.user!,
+          userType: loginModel.user!.type ?? UserType.parent,
+        );
+
+        context.go(
+          Routes.homeScreen.path,
+          extra: {
+            'name': loginModel.user!.name ?? loginModel.user!.email ?? 'New Learner',
+            'email': loginModel.user!.email ?? '',
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -210,18 +250,18 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
           key: _formKey,
           child: Column(
             children: [
-              // Full Name field
+              // Username field
               _buildTextFormField(
-                controller: _nameController,
-                label: 'Full Name',
-                hint: 'Alex Johnson',
+                controller: _usernameController,
+                label: 'Username',
+                hint: 'teacher1',
                 icon: Icons.person_outline_rounded,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter your full name';
+                    return 'Please enter your username';
                   }
                   if (value.trim().length < 2) {
-                    return 'Name must be at least 2 characters';
+                    return 'Username must be at least 2 characters';
                   }
                   return null;
                 },

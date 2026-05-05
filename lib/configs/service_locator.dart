@@ -2,6 +2,7 @@ import 'package:autograde_mobile/core/cubits/auth/auth_cubit.dart';
 import 'package:autograde_mobile/core/data_source/app_remote_data_source.dart';
 import 'package:autograde_mobile/core/data_source/auth_remote_data_source.dart';
 import 'package:autograde_mobile/core/data_source/storage_local_data_source.dart';
+import 'package:autograde_mobile/core/repositories/auth_repository.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -16,6 +17,9 @@ Future<void> initializeDependencies() async {
   );
   locator.registerLazySingleton<AppRemoteDataSource>(
     () => AppRemoteDataSource(),
+  );
+  locator.registerLazySingleton<AuthRepository>(
+    () => AuthRepository(locator()),
   );
   locator.registerLazySingleton<StorageLocalDataSource>(
     () => StorageLocalDataSource(sharedPreferences),

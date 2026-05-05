@@ -12,10 +12,16 @@ class EvaluateAnswerCubit extends AppApiCubit<EvalAnswerModel> {
 
   bool isSuccess = false;
 
-  Future<void> evalAns({required File image}) async {
+  Future<void> evalAns({
+    required File file,
+    required String subject,
+  }) async {
     await call(
       () {
-        return _appRemoteDataSource.submitAnswer(image: image);
+        return _appRemoteDataSource.submitAnswer(
+          file: file,
+          subject: subject,
+        );
       },
       onSuccess: () {
         if (state is ApiLoadedState) {

@@ -114,7 +114,7 @@ abstract class BaseRemoteDataSource with ApiErrorHandlers, DioCacheManager {
   }
 
   void authorizeRequest(String token) {
-    baseHeaders['Authorization'] = 'Bearer $token';
+    baseHeaders['Authorization'] = 'Token $token';
   }
 
   /// Runs before every request

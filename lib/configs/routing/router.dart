@@ -96,8 +96,15 @@ final router = GoRouter(
     GoRoute(
       path: Routes.evaluationResultsScreen.path,
       builder: (context, state) {
-        final String imagePath = (state.extra as String?) ?? '';
-        return EvaluationResultsScreen(imagePath: imagePath);
+        final extra = state.extra;
+        if (extra is Map<String, dynamic>) {
+          final path = extra['path'] as String? ?? '';
+          final subject = extra['subject'] as String? ?? '';
+          return EvaluationResultsScreen(filePath: path, subject: subject);
+        }
+
+        final String path = (state.extra as String?) ?? '';
+        return EvaluationResultsScreen(filePath: path, subject: 'math');
       },
     ),
     // GoRoute(

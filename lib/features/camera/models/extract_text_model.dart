@@ -11,14 +11,29 @@ class EvalAnswerModel extends ApiBaseMessageModel {
 
   static String? _extractEvaluation(Map<String, dynamic> json) {
     try {
-      // Try different possible response structures
-      if (json.containsKey('evaluation')) {
-        return json['evaluation'] as String?;
-      } else if (json.containsKey('extracted_text') &&
-          json['extracted_text'] is Map<String, dynamic>) {
+      if (json['results'] is List) {
+        final results = json['results'] as List;
+        if (results.isNotEmpty && results.first is Map<String, dynamic>) {
+          final firstResult = results.first as Map<String, dynamic>;
+          final extractedText = firstResult['extracted_text'];
+          if (extractedText is Map<String, dynamic>) {
+            return extractedText['evaluation'] as String?;
+          }
+          if (extractedText is String) {
+            return extractedText;
+          }
+        }
+      }
+
+      if (json['extracted_text'] is Map<String, dynamic>) {
         final extractedText = json['extracted_text'] as Map<String, dynamic>;
         return extractedText['evaluation'] as String?;
       }
+
+      if (json['evaluation'] is String) {
+        return json['evaluation'] as String;
+      }
+
       return null;
     } catch (e) {
       return null;
