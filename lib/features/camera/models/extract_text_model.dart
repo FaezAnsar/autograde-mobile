@@ -58,44 +58,51 @@ class EvalAnswerModel extends ApiBaseMessageModel {
           questions: _extractQuestions(json),
         );
 
-  static Map<String, dynamic>? _extractEvaluation(Map<String, dynamic> json) {
+  static List<Map<String, dynamic>> _extractEvaluations(Map<String, dynamic> json) {
+    final evaluations = <Map<String, dynamic>>[];
+
     if (json['results'] is List) {
       final results = json['results'] as List;
-      if (results.isNotEmpty && results.first is Map<String, dynamic>) {
-        final firstResult = results.first as Map<String, dynamic>;
-        if (firstResult['evaluation'] is Map<String, dynamic>) {
-          return firstResult['evaluation'] as Map<String, dynamic>;
+      for (final result in results) {
+        if (result is Map<String, dynamic> && result['evaluation'] is Map<String, dynamic>) {
+          evaluations.add(result['evaluation'] as Map<String, dynamic>);
         }
       }
     }
 
-    if (json['evaluation'] is Map<String, dynamic>) {
-      return json['evaluation'] as Map<String, dynamic>;
+    if (evaluations.isEmpty && json['evaluation'] is Map<String, dynamic>) {
+      evaluations.add(json['evaluation'] as Map<String, dynamic>);
     }
 
-    return null;
+    return evaluations;
   }
 
   static List<EvalQuestionModel> _extractQuestions(Map<String, dynamic> json) {
-    final evaluation = _extractEvaluation(json);
-    if (evaluation == null || evaluation['questions'] is! List) {
-      return const [];
+    final evaluations = _extractEvaluations(json);
+    final questions = <EvalQuestionModel>[];
+
+    for (final evaluation in evaluations) {
+      if (evaluation['questions'] is List) {
+        final questionList = evaluation['questions'] as List;
+        questions.addAll(
+          questionList
+              .whereType<Map<String, dynamic>>()
+              .map(EvalQuestionModel.fromJson),
+        );
+      }
     }
 
-    final questions = evaluation['questions'] as List;
-    return questions
-        .whereType<Map<String, dynamic>>()
-        .map(EvalQuestionModel.fromJson)
-        .toList();
+    return questions;
   }
 
   static Map<String, dynamic>? _extractFirstQuestion(Map<String, dynamic> json) {
-    final evaluation = _extractEvaluation(json);
-    if (evaluation == null) return null;
-    if (evaluation['questions'] is List) {
-      final questions = evaluation['questions'] as List;
-      if (questions.isNotEmpty && questions.first is Map<String, dynamic>) {
-        return questions.first as Map<String, dynamic>;
+    final evaluations = _extractEvaluations(json);
+    for (final evaluation in evaluations) {
+      if (evaluation['questions'] is List) {
+        final questions = evaluation['questions'] as List;
+        if (questions.isNotEmpty && questions.first is Map<String, dynamic>) {
+          return questions.first as Map<String, dynamic>;
+        }
       }
     }
     return null;
