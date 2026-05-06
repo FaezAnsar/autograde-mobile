@@ -82,13 +82,14 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
     if (image != null) {
       setState(() => _selectedImagePath = image.path);
-      context.push(
+      await context.push(
         Routes.evaluationResultsScreen.path,
         extra: {
           'path': image.path,
           'subject': _selectedSubject!,
         },
       );
+      _loadHistory();
     }
   }
 
@@ -111,13 +112,15 @@ class _HomeScreenState extends State<HomeScreen> {
       if (paths.isEmpty) return;
 
       setState(() => _bulkUploadCount = paths.length);
-      context.push(
+      await context.push(
         Routes.batchPhotoPreviewScreen.path,
         extra: {
           'imagePaths': paths,
           'subject': _selectedSubject!,
         },
       );
+      setState(() => _bulkUploadCount = 0);
+      _loadHistory();
     }
   }
 
@@ -137,13 +140,14 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() => _selectedPdfName = result.files.first.name);
       final selectedPath = result.files.first.path;
       if (selectedPath != null) {
-        context.push(
+        await context.push(
           Routes.evaluationResultsScreen.path,
           extra: {
             'path': selectedPath,
             'subject': _selectedSubject!,
           },
         );
+        _loadHistory();
       }
     }
   }
@@ -153,6 +157,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final String displayName =
         widget.name?.trim().isNotEmpty == true ? widget.name! : 'Learner';
     final int totalHistoryCount = _historyItems.length;
+    final int completedCount = _historyItems
+        .where((item) => item.evaluationText.trim().isNotEmpty)
+        .length;
     final List<HistoryItemModel> displayHistoryItems =
         _historyItems.take(_visibleHistoryCount).toList();
     final bool hasMoreHistory = _visibleHistoryCount < totalHistoryCount;
@@ -170,7 +177,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               _buildGreeting(displayName),
               SizedBox(height: 20.h),
-              _buildStatsRow(),
+              _buildStatsRow(totalHistoryCount, completedCount),
               SizedBox(height: 24.h),
               _buildSectionLabel('Upload'),
               SizedBox(height: 10.h),
@@ -417,12 +424,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ─── Stats ────────────────────────────────────────────────────────────────
 
-  Widget _buildStatsRow() {
+  Widget _buildStatsRow(int totalUploads, int completedUploads) {
     return Row(
       children: [
-        Expanded(child: _StatCard(value: '12', label: 'Total uploads', dark: true)),
+        Expanded(child: _StatCard(value: '$totalUploads', label: 'Total uploads', dark: true)),
         SizedBox(width: 10.w),
-        Expanded(child: _StatCard(value: '9', label: 'Completed', dark: false)),
+        Expanded(child: _StatCard(value: '$completedUploads', label: 'Completed', dark: false)),
       ],
     );
   }

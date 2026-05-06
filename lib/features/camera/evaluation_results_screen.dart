@@ -1693,49 +1693,23 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
                 ),
                 SizedBox(height: 32.h),
                 if (state is ApiLoadedState<EvalAnswerModel>) ...[
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => context.pop(),
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(
-                              color: Colors.grey[400]!,
-                              width: 1,
-                            ),
-                            padding: EdgeInsets.symmetric(vertical: 16.h),
-                          ),
-                          child: Text(
-                            'Take Another Photo',
-                            style: TextStyle(
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey[700],
-                            ),
-                          ),
-                        ),
+                  ElevatedButton(
+                    onPressed: () {
+                      context.go(Routes.homeScreen.path);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.teal,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(vertical: 16.h),
+                      minimumSize: Size(double.infinity, 48.h),
+                    ),
+                    child: Text(
+                      'Done',
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w600,
                       ),
-                      SizedBox(width: 16.w),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            context.go(Routes.dashboardScreen.path);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.teal,
-                            foregroundColor: Colors.white,
-                            padding: EdgeInsets.symmetric(vertical: 16.h),
-                          ),
-                          child: Text(
-                            'Done',
-                            style: TextStyle(
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ],
               ],
