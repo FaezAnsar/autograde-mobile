@@ -1,7 +1,10 @@
 import 'dart:async';
 
 import 'package:autograde_mobile/configs/routing/routes.dart';
+import 'package:autograde_mobile/configs/service_locator.dart';
+import 'package:autograde_mobile/core/cubits/auth/auth_cubit.dart';
 import 'package:autograde_mobile/core/constants/app_assets.dart';
+import 'package:autograde_mobile/core/cubits/auth/auth_states.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -19,9 +22,21 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Timer(const Duration(milliseconds:5000), () {
+    locator<AuthCubit>().initialize();
+    Timer(const Duration(milliseconds: 5000), () {
       if (!mounted) return;
-      context.go(Routes.signInScreen.path);
+      final authState = locator<AuthCubit>().state;
+      if (authState is  AuthAuthorized) {
+        context.go(
+          Routes.homeScreen.path,
+          extra: {
+            'name': authState.user?.name ?? authState.user?.email ?? 'Learner',
+            'email': authState.user?.email ?? '',
+          },
+        );
+      } else {
+        context.go(Routes.signInScreen.path);
+      }
     });
   }
 

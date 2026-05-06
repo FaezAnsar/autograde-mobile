@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:autograde_mobile/configs/routing/routes.dart';
 import 'package:autograde_mobile/configs/service_locator.dart';
+import 'package:autograde_mobile/core/cubits/auth/auth_cubit.dart';
 import 'package:autograde_mobile/core/data_source/app_remote_data_source.dart';
+import 'package:autograde_mobile/core/repositories/auth_repository.dart';
 import 'package:autograde_mobile/core/utils/helpers.dart';
 import 'package:autograde_mobile/features/home/models/history_item_model.dart';
 import 'package:file_picker/file_picker.dart';
@@ -25,6 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _selectedSubject;
   int _bulkUploadCount = 0;
   int _bottomNavIndex = 0;
+  bool _isLoggingOut = false;
 
   static const Map<String, String> _subjectOptions = {
     'Islamiat': 'isl',
@@ -304,10 +307,87 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+      actions: [
+        IconButton(
+          onPressed: () => _confirmLogout(context),
+          icon: Icon(Icons.logout, color: const Color(0xFF1A1A1A), size: 22.sp),
+          tooltip: 'Logout',
+        ),
+        SizedBox(width: 8.w),
+      ],
     );
   }
 
   // ─── Bottom Nav ───────────────────────────────────────────────────────────
+
+  Future<void> _confirmLogout(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(
+            'Confirm Logout',
+            style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w700),
+          ),
+          content: Text(
+            'Are you sure you want to logout?',
+            style: TextStyle(fontSize: 14.sp),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(
+                'Cancel',
+                style: TextStyle(fontSize: 14.sp),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(
+                'Logout',
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      await _performLogout(context);
+    }
+  }
+
+  Future<void> _performLogout(BuildContext context) async {
+    if (_isLoggingOut) return;
+    setState(() => _isLoggingOut = true);
+
+    final token = locator<AuthCubit>().getCurrentToken();
+    if (token != null) {
+      final result = await locator<AuthRepository>().logout(token: token);
+      result.match(
+        (error) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(error.message),
+                backgroundColor: const Color(0xFFef4444),
+              ),
+            );
+          }
+        },
+        (_) {},
+      );
+    }
+
+    locator<AuthCubit>().unAuthorizeUser();
+    if (!mounted) return;
+    setState(() => _isLoggingOut = false);
+    context.go(Routes.signInScreen.path);
+  }
 
   Widget _buildBottomNav(BuildContext context) {
     return Container(

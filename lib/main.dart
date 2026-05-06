@@ -14,6 +14,7 @@ Future<void> main() async {
   // Load .env & initialize dependencies
 
   await initializeDependencies();
+  locator<AuthCubit>().initialize();
 
   // Disable framework-level assertions (temporary dev workaround)
   FlutterError.onError = (FlutterErrorDetails details) {
