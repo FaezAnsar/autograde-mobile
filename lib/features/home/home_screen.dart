@@ -444,7 +444,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: Icons.person_outline,
                 label: 'Profile',
                 selected: _bottomNavIndex == 2,
-                onTap: () => setState(() => _bottomNavIndex = 2),
+                onTap: () {
+                  setState(() => _bottomNavIndex = 2);
+                  context.go(Routes.myProfileScreen.path);
+                },
               ),
             ],
           ),

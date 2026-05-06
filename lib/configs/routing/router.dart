@@ -6,6 +6,7 @@ import 'package:autograde_mobile/features/auth/signup_screen.dart';
 import 'package:autograde_mobile/features/camera/evaluation_results_screen.dart';
 import 'package:autograde_mobile/features/camera/image_evaluation_screen.dart';
 import 'package:autograde_mobile/features/home/home_screen.dart';
+import 'package:autograde_mobile/features/profile/profile_screen.dart';
 import 'package:autograde_mobile/features/splash_screen.dart';
 import 'package:go_router/go_router.dart';
 
@@ -135,6 +136,10 @@ final router = GoRouter(
         final String path = (state.extra as String?) ?? '';
         return EvaluationResultsScreen(filePath: path, subject: 'math');
       },
+    ),
+    GoRoute(
+      path: Routes.myProfileScreen.path,
+      builder: (context, state) => const ProfileScreen(),
     ),
     // GoRoute(
     //   path: Routes.dashboardScreen.path,
