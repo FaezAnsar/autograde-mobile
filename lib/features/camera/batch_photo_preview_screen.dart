@@ -235,11 +235,12 @@ class BatchPhotoPreviewScreen extends HookWidget {
   void _processAllPhotos(BuildContext context) {
     debugPrint('Processing ${imagePaths.length} photos for evaluation');
 
-    // Navigate to image evaluation screen
+    // Navigate directly to evaluation results for bulk images
     context.push(
-      Routes.imageEvaluationScreen.path,
+      Routes.evaluationResultsScreen.path,
       extra: {
-        'imagePaths': List<String>.from(imagePaths),
+        'path': imagePaths.first,
+        'paths': List<String>.from(imagePaths),
         'subject': subject,
       },
     );
