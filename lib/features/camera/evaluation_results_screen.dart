@@ -265,8 +265,8 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
   Widget _buildSuggestionList(List<String> suggestions) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: suggestions.asMap().entries.map((entry) {
-        final text = entry.value
+      children: suggestions.map((suggestion) {
+        final text = suggestion
             .replaceAll('*', '')
             .replaceAll(RegExp(r'\s{2,}'), ' ')
             .trim();
@@ -304,6 +304,85 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
           ),
         );
       }).toList(),
+    );
+  }
+
+Widget _buildFeedbackSection(BuildContext context, ApiState state) {
+  return Container(
+    width: double.infinity,
+    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12.r),
+      border: Border.all(color: Colors.grey.shade200),
+    ),
+    child: state is ApiLoadedState<EvalAnswerModel>
+        ? _buildAutogradeFeedbackSection(state.data)
+        : state is ApiErrorState
+            ? _buildErrorCard(context, state.error)
+            : const SizedBox.shrink(),
+  );
+}
+  Widget _buildErrorCard(BuildContext context, String error) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: Colors.red[50],
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(
+          color: Colors.red[200]!,
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.error_outline,
+            color: Colors.red,
+            size: 32.sp,
+          ),
+          SizedBox(height: 12.h),
+          Text(
+            'Evaluation Failed',
+            style: TextStyle(
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w600,
+              color: Colors.red[700],
+            ),
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            error,
+            style: TextStyle(
+              fontSize: 14.sp,
+              color: Colors.red[600],
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 16.h),
+          ElevatedButton(
+            onPressed: () {
+              context.go(Routes.homeScreen.path);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(
+                horizontal: 24.w,
+                vertical: 12.h,
+              ),
+            ),
+            child: Text(
+              'Go to Home',
+              style: TextStyle(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -824,7 +903,7 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
     if (percent >= 90) return 'Exceptional';
     if (percent >= 75) return 'Strong';
     if (percent >= 60) return 'Good';
-    if (percent > 0) return 'Needs polish';
+    if (percent > 0) return 'Can Improve';
     return 'Ready';
   }
 
@@ -1068,6 +1147,250 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
     );
   }
 
+  Widget _buildAutogradeFeedbackSection(EvalAnswerModel model) {
+    final questions = model.questions;
+    final isBatch = questions.length > 1;
+    final primaryQuestion = questions.isNotEmpty ? questions.first : null;
+    final feedbackText = model.comments ?? model.eval ?? primaryQuestion?.comments ?? '';
+    final parsed = _parseEvaluationText(feedbackText);
+    final score = primaryQuestion?.score ?? model.score ?? parsed['score'] as String?;
+    final intro = parsed['intro'] as String;
+    final suggestions = parsed['suggestions'] as List<String>;
+    final breakdown = parsed['breakdown'] as List<String>;
+    final paragraphs = parsed['paragraphs'] as List<String>;
+    final scorePercent = _scorePercentage(score);
+    final gradeTag = _scoreTag(score);
+    final headline = isBatch
+        ? '${questions.length} questions evaluated successfully.'
+        : intro.isNotEmpty
+            ? intro.replaceAll('*', '')
+            : 'Detailed evaluation complete. Your AI examiner is ready with feedback.';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildEvaluationSummaryBanner(context, score, scorePercent, gradeTag),
+        SizedBox(height: 24.h),
+        if (!isBatch &&
+            ((model.questionText?.isNotEmpty ?? false) ||
+                (model.questionId?.isNotEmpty ?? false))) ...[
+          _buildSectionCard(
+            title: 'Question details',
+            child: Text(
+              model.questionText?.isNotEmpty == true
+                  ? model.questionText!
+                  : 'Question ID: ${model.questionId}',
+              style: TextStyle(
+                fontSize: 14.sp,
+                color: Colors.grey[800],
+                height: 1.7,
+              ),
+            ),
+          ),
+          SizedBox(height: 18.h),
+        ],
+        if (!isBatch && (model.answerText?.isNotEmpty ?? false)) ...[
+          _buildSectionCard(
+            title: 'Your submitted answer',
+            child: Text(
+              model.answerText!.trim(),
+              style: TextStyle(
+                fontSize: 14.sp,
+                color: Colors.grey[800],
+                height: 1.7,
+              ),
+            ),
+          ),
+          SizedBox(height: 18.h),
+        ],
+        _buildSectionCard(
+          title: isBatch ? 'Batch summary' : 'What the AI found',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                headline,
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  color: Colors.grey[800],
+                  height: 1.7,
+                ),
+              ),
+              if (isBatch) ...[
+                SizedBox(height: 10.h),
+                Text(
+                  '${questions.length} items were evaluated. Review the question-by-question feedback below.',
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    color: Colors.grey[700],
+                    height: 1.6,
+                  ),
+                ),
+              ],
+              if (breakdown.isNotEmpty && !isBatch) ...[
+                SizedBox(height: 14.h),
+                _buildSuggestionList(breakdown),
+              ],
+            ],
+          ),
+        ),
+        SizedBox(height: 18.h),
+        _buildSectionCard(
+          title: 'Suggested improvements',
+          child: _buildSuggestionsContent(suggestions, paragraphs, model),
+        ),
+        if (questions.length > 1) ...[
+          SizedBox(height: 18.h),
+          _buildSectionCard(
+            title: 'Question-by-question results',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: questions
+                  .map(
+                    (question) => Padding(
+                      padding: EdgeInsets.only(bottom: 16.h),
+                      child: _buildQuestionResultCard(question),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+Widget _buildEvaluationSummaryBanner(
+  BuildContext context,
+  String? score,
+  String scorePercent,
+  String gradeTag,
+) {
+  return Container(
+    padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 20.w),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: [Color(0xFF2B3A80), Color(0xFF4A62B8)],
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
+      ),
+      borderRadius: BorderRadius.circular(20.r),
+    ),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: [
+        _buildMetricCompact(
+          value: score ?? '--',
+          label: 'Score',
+          icon: Icons.star_outline,
+        ),
+        _buildMetricCompact(
+          value: scorePercent,
+          label: 'Accuracy',
+          icon: Icons.speed_outlined,
+        ),
+        _buildMetricCompact(
+          value: gradeTag,
+          label: 'Rating',
+          icon: Icons.trending_up,
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildMetricCompact({
+  required String value,
+  required String label,
+  required IconData icon,
+}) {
+  return Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(icon, color: Colors.white70, size: 18.sp),
+      SizedBox(height: 6.h),
+      Text(
+        value,
+        style: TextStyle(
+          fontSize: 22.sp,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+        ),
+      ),
+      SizedBox(height: 4.h),
+      Text(
+        label,
+        style: TextStyle(
+          fontSize: 11.sp,
+          color: Colors.white70,
+          letterSpacing: 0.5,
+        ),
+      ),
+    ],
+  );
+}
+// Widget _buildMetricCompact({required String label, required String value}) {
+//   return Column(
+//     mainAxisSize: MainAxisSize.min,
+//     children: [
+//       Text(
+//         value,
+//         style: TextStyle(
+//           fontSize: 20.sp,
+//           fontWeight: FontWeight.w700,
+//           color: Colors.white,
+//         ),
+//       ),
+//       SizedBox(height: 4.h),
+//       Text(
+//         label,
+//         style: TextStyle(
+//           fontSize: 12.sp,
+//           color: Colors.white70,
+//         ),
+//       ),
+//     ],
+//   );
+// }
+  
+  Widget _buildSuggestionsContent(
+    List<String> suggestions,
+    List<String> paragraphs,
+    EvalAnswerModel model,
+  ) {
+    if (suggestions.isNotEmpty) {
+      return _buildSuggestionList(suggestions);
+    }
+
+    if (paragraphs.isNotEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: paragraphs.map((paragraph) {
+          return Padding(
+            padding: EdgeInsets.only(bottom: 12.h),
+            child: Text(
+              paragraph,
+              style: TextStyle(
+                fontSize: 14.sp,
+                color: Colors.grey[800],
+                height: 1.7,
+              ),
+            ),
+          );
+        }).toList(),
+      );
+    }
+
+    return Text(
+      model.comments ?? model.eval ?? 'No detailed feedback was returned.',
+      style: TextStyle(
+        fontSize: 14.sp,
+        color: Colors.grey[800],
+        height: 1.7,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1244,356 +1567,7 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
                   ),
                 ),
                 SizedBox(height: 24.h),
-             Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.all(18.w),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(18.r),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.03),
-                        blurRadius: 18,
-                        offset: Offset(0, 10.h),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.assessment,
-                            color: Colors.teal,
-                            size: 24.sp,
-                          ),
-                          SizedBox(width: 10.w),
-                          Text(
-                            'Autograde Feedback',
-                            style: TextStyle(
-                              fontSize: 18.sp,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 16.h),
-                      if (state is ApiLoadedState<EvalAnswerModel>) ...[
-                        Builder(
-                          builder: (context) {
-                            final model = state.data;
-                            final questions = model.questions;
-                            final primaryQuestion = questions.isNotEmpty ? questions.first : null;
-                            final isBatch = questions.length > 1;
-                            final parsed = _parseEvaluationText(
-                              model.comments ?? model.eval ?? primaryQuestion?.comments ?? '',
-                            );
-                            final score = primaryQuestion?.score ?? model.score ?? parsed['score'] as String?;
-                            final intro = parsed['intro'] as String;
-                            final suggestions = parsed['suggestions'] as List<String>;
-                            final breakdown = parsed['breakdown'] as List<String>;
-                            final paragraphs = parsed['paragraphs'] as List<String>;
-                            final scorePercent = _scorePercentage(score);
-                            final gradeTag = _scoreTag(score);
-                            final headline = isBatch
-                                ? '${questions.length} questions evaluated successfully.'
-                                : intro.isNotEmpty
-                                    ? intro.replaceAll('*', '')
-                                    : 'Detailed evaluation complete. Your AI examiner is ready with feedback.';
-
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  width: double.infinity,
-                                  padding: EdgeInsets.all(22.w),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: const [
-                                        Color(0xFF2B3A80),
-                                        Color(0xFF5A72C8),
-                                      ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    ),
-                                    borderRadius: BorderRadius.circular(24.r),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.14),
-                                        blurRadius: 24,
-                                        offset: Offset(0, 14.h),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Container(
-                                            width: 56.w,
-                                            height: 56.w,
-                                            decoration: BoxDecoration(
-                                              color: Colors.white.withOpacity(0.18),
-                                              borderRadius: BorderRadius.circular(16.r),
-                                            ),
-                                            child: Icon(
-                                              Icons.verified,
-                                              color: Colors.white,
-                                              size: 28.sp,
-                                            ),
-                                          ),
-                                          SizedBox(width: 14.w),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  'Evaluation Complete',
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 18.sp,
-                                                    fontWeight: FontWeight.w700,
-                                                  ),
-                                                ),
-                                                SizedBox(height: 6.h),
-                                                Text(
-                                                  'Your answer has been reviewed by our AI examiner.',
-                                                  style: TextStyle(
-                                                    color: Colors.white70,
-                                                    fontSize: 14.sp,
-                                                    height: 1.6,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      SizedBox(height: 22.h),
-                                      Wrap(
-                                        spacing: 14.w,
-                                        runSpacing: 14.h,
-                                        children: [
-                                          SizedBox(
-                                            width: (MediaQuery.of(context).size.width - 44.w - 28.w) / 3,
-                                            child: _buildResultMetric(
-                                              title: 'Score',
-                                              value: score ?? '--',
-                                              icon: Icons.star,
-                                              color: Colors.amber,
-                                            ),
-                                          ),
-                                          SizedBox(
-                                            width: (MediaQuery.of(context).size.width - 44.w - 28.w) / 3,
-                                            child: _buildResultMetric(
-                                              title: 'Accuracy',
-                                              value: scorePercent,
-                                              icon: Icons.speed,
-                                              color: Colors.lightBlue,
-                                            ),
-                                          ),
-                                          SizedBox(
-                                            width: (MediaQuery.of(context).size.width - 44.w - 28.w) / 3,
-                                            child: _buildResultMetric(
-                                              title: 'Rating',
-                                              value: gradeTag,
-                                              icon: Icons.trending_up,
-                                              color: Colors.green,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                SizedBox(height: 24.h),
-                                if (!isBatch &&
-                                    ((model.questionText?.isNotEmpty ?? false) ||
-                                        (model.questionId?.isNotEmpty ?? false))) ...[
-                                  _buildSectionCard(
-                                    title: 'Question details',
-                                    child: Text(
-                                      model.questionText?.isNotEmpty == true
-                                          ? model.questionText!
-                                          : 'Question ID: ${model.questionId}',
-                                      style: TextStyle(
-                                        fontSize: 14.sp,
-                                        color: Colors.grey[800],
-                                        height: 1.7,
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(height: 18.h),
-                                ],
-                                if (!isBatch && (model.answerText?.isNotEmpty ?? false)) ...[
-                                  _buildSectionCard(
-                                    title: 'Your submitted answer',
-                                    child: Text(
-                                      model.answerText!.trim(),
-                                      style: TextStyle(
-                                        fontSize: 14.sp,
-                                        color: Colors.grey[800],
-                                        height: 1.7,
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(height: 18.h),
-                                ],
-                                _buildSectionCard(
-                                  title: isBatch ? 'Batch summary' : 'What the AI found',
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        headline,
-                                        style: TextStyle(
-                                          fontSize: 14.sp,
-                                          color: Colors.grey[800],
-                                          height: 1.7,
-                                        ),
-                                      ),
-                                      if (isBatch) ...[
-                                        SizedBox(height: 10.h),
-                                        Text(
-                                          '${questions.length} items were evaluated. Review the question-by-question feedback below.',
-                                          style: TextStyle(
-                                            fontSize: 13.sp,
-                                            color: Colors.grey[700],
-                                            height: 1.6,
-                                          ),
-                                        ),
-                                      ],
-                                      if (breakdown.isNotEmpty && !isBatch) ...[
-                                        SizedBox(height: 14.h),
-                                        _buildSuggestionList(breakdown),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-                                SizedBox(height: 18.h),
-                                _buildSectionCard(
-                                  title: 'Suggested improvements',
-                                  child: suggestions.isNotEmpty
-                                      ? _buildSuggestionList(suggestions)
-                                      : paragraphs.isNotEmpty
-                                          ? Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: paragraphs.map(
-                                                (paragraph) {
-                                                  return Padding(
-                                                    padding: EdgeInsets.only(bottom: 12.h),
-                                                    child: Text(
-                                                      paragraph,
-                                                      style: TextStyle(
-                                                        fontSize: 14.sp,
-                                                        color: Colors.grey[800],
-                                                        height: 1.7,
-                                                      ),
-                                                    ),
-                                                  );
-                                                },
-                                              ).toList(),
-                                            )
-                                          : Text(
-                                              model.comments ?? model.eval ??
-                                                  'No detailed feedback was returned.',
-                                              style: TextStyle(
-                                                fontSize: 14.sp,
-                                                color: Colors.grey[800],
-                                                height: 1.7,
-                                              ),
-                                            ),
-                                ),
-                                if (questions.length > 1) ...[
-                                  SizedBox(height: 18.h),
-                                  _buildSectionCard(
-                                    title: 'Question-by-question results',
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: questions
-                                          .map(
-                                            (question) => Padding(
-                                              padding: EdgeInsets.only(bottom: 16.h),
-                                              child: _buildQuestionResultCard(question),
-                                            ),
-                                          )
-                                          .toList(),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            );
-                          },
-                        ),
-                      ] else if (state is ApiErrorState) ...[
-                        Container(
-                          width: double.infinity,
-                          padding: EdgeInsets.all(16.w),
-                          decoration: BoxDecoration(
-                            color: Colors.red[50],
-                            borderRadius: BorderRadius.circular(12.r),
-                            border: Border.all(
-                              color: Colors.red[200]!,
-                              width: 1,
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.error_outline,
-                                color: Colors.red,
-                                size: 32.sp,
-                              ),
-                              SizedBox(height: 12.h),
-                              Text(
-                                'Evaluation Failed',
-                                style: TextStyle(
-                                  fontSize: 16.sp,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.red[700],
-                                ),
-                              ),
-                              SizedBox(height: 8.h),
-                              Text(
-                                state.error,
-                                style: TextStyle(
-                                  fontSize: 14.sp,
-                                  color: Colors.red[600],
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              SizedBox(height: 16.h),
-                              ElevatedButton(
-                                onPressed: () {
-                                  context.go(Routes.homeScreen.path);
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red,
-                                  foregroundColor: Colors.white,
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 24.w,
-                                    vertical: 12.h,
-                                  ),
-                                ),
-                                child: Text(
-                                  'Go to Home',
-                                  style: TextStyle(
-                                    fontSize: 14.sp,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
+                _buildFeedbackSection(context, state),
                 SizedBox(height: 32.h),
                 if (state is ApiLoadedState<EvalAnswerModel>) ...[
                   ElevatedButton(
