@@ -66,8 +66,8 @@ class AppRemoteDataSource extends BaseRemoteDataSource {
       method: RequestType.post,
       headers: headers,
       data: formData,
-      sendTimeout: const Duration(seconds: 120),
-      receiveTimeout: const Duration(seconds: 120),
+      sendTimeout: const Duration(seconds: 480),
+      receiveTimeout: const Duration(seconds: 480),
       transformer: (data) =>
           EvalAnswerModel.fromJson(data as Map<String, dynamic>),
     );
