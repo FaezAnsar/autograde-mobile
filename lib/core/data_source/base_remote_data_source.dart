@@ -31,6 +31,9 @@ abstract class BaseRemoteDataSource with ApiErrorHandlers, DioCacheManager {
     Map<String, dynamic>? headers,
     String? contentType,
     Object? data,
+    Duration? connectTimeout,
+    Duration? sendTimeout,
+    Duration? receiveTimeout,
     Either<ApiException, T> Function<T>(DioException e)? dioErrorHandler,
     bool useCache = false,
   }) async {
@@ -43,9 +46,9 @@ abstract class BaseRemoteDataSource with ApiErrorHandlers, DioCacheManager {
               BaseOptions(
                 baseUrl: baseUrl,
                 contentType: contentType,
-                connectTimeout: const Duration(seconds: 15),
-                sendTimeout: const Duration(seconds: 15),
-                receiveTimeout: const Duration(seconds: 15),
+                connectTimeout: connectTimeout ?? const Duration(seconds: 15),
+                sendTimeout: sendTimeout ?? const Duration(seconds: 15),
+                receiveTimeout: receiveTimeout ?? const Duration(seconds: 15),
                 headers: {
                   HttpHeaders.acceptHeader: Headers.jsonContentType,
                   ...baseHeaders,

@@ -64,9 +64,10 @@ class AppRemoteDataSource extends BaseRemoteDataSource {
     return request(
       endpoint: ApiEndpoints.extractText,
       method: RequestType.post,
-      contentType: 'multipart/form-data',
       headers: headers,
       data: formData,
+      sendTimeout: const Duration(seconds: 60),
+      receiveTimeout: const Duration(seconds: 60),
       transformer: (data) =>
           EvalAnswerModel.fromJson(data as Map<String, dynamic>),
     );

@@ -9,12 +9,24 @@ import 'package:autograde_mobile/core/utils/helpers.dart';
 
 mixin ApiErrorHandlers {
   Either<ApiException, T> handleDioException<T>(DioException e) {
-    log('ApiException: ${e.response?.data}', name: 'ApiErrorHandlers');
+    log('ApiException: ${e.response?.data ?? e.message}', name: 'ApiErrorHandlers');
+
+    String message = 'Unknown error';
+    final responseData = e.response?.data;
+    if (responseData is Map<String, dynamic>) {
+      message = (responseData['message'] as String?) ??
+          (responseData['detail'] as String?) ??
+          message;
+    } else if (responseData is String) {
+      message = responseData;
+    } else if (e.message?.isNotEmpty == true) {
+      message = e.message ?? message;
+    }
 
     return left(
       ApiException(
         url: e.requestOptions.path,
-        message: (e.response?.data['message'] as String?) ?? 'Unknown error',
+        message: message,
         response: e.response,
         statusCode: e.response?.statusCode,
       ),

@@ -1394,6 +1394,7 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
                             final model = state.data;
                             final questions = model.questions;
                             final primaryQuestion = questions.isNotEmpty ? questions.first : null;
+                            final isBatch = questions.length > 1;
                             final parsed = _parseEvaluationText(
                               model.comments ?? model.eval ?? primaryQuestion?.comments ?? '',
                             );
@@ -1404,9 +1405,11 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
                             final paragraphs = parsed['paragraphs'] as List<String>;
                             final scorePercent = _scorePercentage(score);
                             final gradeTag = _scoreTag(score);
-                            final headline = intro.isNotEmpty
-                                ? intro.replaceAll('*', '')
-                                : 'Detailed evaluation complete. Your AI examiner is ready with feedback.';
+                            final headline = isBatch
+                                ? '${questions.length} questions evaluated successfully.'
+                                : intro.isNotEmpty
+                                    ? intro.replaceAll('*', '')
+                                    : 'Detailed evaluation complete. Your AI examiner is ready with feedback.';
 
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1507,8 +1510,9 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
                                   ),
                                 ),
                                 SizedBox(height: 24.h),
-                                if ((model.questionText?.isNotEmpty ?? false) ||
-                                    (model.questionId?.isNotEmpty ?? false)) ...[
+                                if (!isBatch &&
+                                    ((model.questionText?.isNotEmpty ?? false) ||
+                                        (model.questionId?.isNotEmpty ?? false))) ...[
                                   _buildSectionCard(
                                     title: 'Question details',
                                     child: Text(
@@ -1524,7 +1528,7 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
                                   ),
                                   SizedBox(height: 18.h),
                                 ],
-                                if (model.answerText?.isNotEmpty ?? false) ...[
+                                if (!isBatch && (model.answerText?.isNotEmpty ?? false)) ...[
                                   _buildSectionCard(
                                     title: 'Your submitted answer',
                                     child: Text(
@@ -1539,7 +1543,7 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
                                   SizedBox(height: 18.h),
                                 ],
                                 _buildSectionCard(
-                                  title: 'What the AI found',
+                                  title: isBatch ? 'Batch summary' : 'What the AI found',
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
@@ -1551,7 +1555,18 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
                                           height: 1.7,
                                         ),
                                       ),
-                                      if (breakdown.isNotEmpty) ...[
+                                      if (isBatch) ...[
+                                        SizedBox(height: 10.h),
+                                        Text(
+                                          '${questions.length} items were evaluated. Review the question-by-question feedback below.',
+                                          style: TextStyle(
+                                            fontSize: 13.sp,
+                                            color: Colors.grey[700],
+                                            height: 1.6,
+                                          ),
+                                        ),
+                                      ],
+                                      if (breakdown.isNotEmpty && !isBatch) ...[
                                         SizedBox(height: 14.h),
                                         _buildSuggestionList(breakdown),
                                       ],
