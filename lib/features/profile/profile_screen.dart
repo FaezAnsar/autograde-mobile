@@ -159,6 +159,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
       ),
+      bottomNavigationBar: _buildBottomNav(context),
     );
   }
 
@@ -182,6 +183,111 @@ class _ProfileScreenState extends State<ProfileScreen> {
               value,
               textAlign: TextAlign.right,
               style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomNav(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Color(0xFFE8E6E0), width: 0.5)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 40.w, vertical: 10.h),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _ProfileNavItem(
+                icon: Icons.home_filled,
+                label: 'Home',
+                selected: false,
+                onTap: () => context.go(Routes.homeScreen.path),
+              ),
+              GestureDetector(
+                onTap: () => context.push(Routes.cameraScreen.path),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 46.w,
+                      height: 46.w,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1A1A1A),
+                        borderRadius: BorderRadius.circular(14.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.18),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Icon(Icons.camera_alt_rounded,
+                          color: Colors.white, size: 20.sp),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      'Camera',
+                      style: TextStyle(
+                          fontSize: 10.sp,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFFAAAAAA)),
+                    ),
+                  ],
+                ),
+              ),
+              _ProfileNavItem(
+                icon: Icons.person_outline,
+                label: 'Profile',
+                selected: true,
+                onTap: () {},
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileNavItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ProfileNavItem({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 22.sp,
+            color: selected ? const Color(0xFF1A1A1A) : const Color(0xFFAAAAAA),
+          ),
+          SizedBox(height: 4.h),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10.sp,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+              color: selected ? const Color(0xFF1A1A1A) : const Color(0xFFAAAAAA),
             ),
           ),
         ],
