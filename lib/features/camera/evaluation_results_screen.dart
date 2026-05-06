@@ -37,6 +37,11 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
   double _progress = 0.0;
   int _statusIndex = 0;
   int _tipIndex = 0;
+  int _progressStageIndex = 0;
+  int _progressHoldCount = 0;
+  final List<double> _progressStages = [30, 55, 78, 92, 98];
+  final List<double> _progressSpeeds = [1.2, 0.9, 0.6, 0.35, 0.2];
+  final List<int> _progressHoldTicks = [5, 6, 8, 10, 999];
   final List<String> _statusMessages = [
     'Scanning handwriting...',
     'Reading keywords...',
@@ -93,15 +98,23 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
 
     _progressTimer = Timer.periodic(const Duration(milliseconds: 180), (_) {
       setState(() {
-        if (_progress < 95) {
-          final increment = _progress < 40
-              ? 3.5
-              : _progress < 80
-                  ? 1.3
-                  : 0.7;
-          _progress = min(95, _progress + increment);
-          _currentStats = _updateStatsFromProgress(_progress);
+        if (_progress >= 98) return;
+
+        final target = _progressStages[_progressStageIndex];
+        if (_progress >= target) {
+          if (_progressHoldCount < _progressHoldTicks[_progressStageIndex]) {
+            _progressHoldCount += 1;
+            return;
+          }
+          if (_progressStageIndex < _progressStages.length - 1) {
+            _progressStageIndex += 1;
+            _progressHoldCount = 0;
+          }
         }
+
+        final increment = _progressSpeeds[_progressStageIndex];
+        _progress = min(target, _progress + increment);
+        _currentStats = _updateStatsFromProgress(_progress);
       });
     });
   }
@@ -113,11 +126,11 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
   }
 
   List<int> _updateStatsFromProgress(double progress) {
-    final int pages = 1 + min(3, (progress / 30).floor());
-    final concepts = min(16, 3 + (progress / 10).floor());
-    final points = min(12, 2 + (progress / 9).floor());
-    final confidence = min(99, 80 + (progress / 2).floor());
-    return [pages, concepts, points, confidence];
+    final int modules = 2 + min(3, (progress / 30).floor());
+    final int concepts = min(16, 4 + (progress / 8).floor());
+    final int points = min(12, 3 + (progress / 10).floor());
+    final int confidence = min(99, 82 + (progress / 2).floor());
+    return [modules, concepts, points, confidence];
   }
 
   @override
@@ -720,6 +733,123 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
     );
   }
 
+  Widget _buildResultMetric({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Expanded(
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 18.h, horizontal: 16.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18.r),
+          border: Border.all(color: Colors.grey[200]!),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 16,
+              offset: Offset(0, 8.h),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 34.w,
+                  height: 34.w,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.14),
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                  child: Icon(icon, color: color, size: 20.sp),
+                ),
+                const Spacer(),
+              ],
+            ),
+            SizedBox(height: 18.h),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 22.sp,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+              ),
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              title,
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 13.sp,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _scorePercentage(String? score) {
+    if (score == null) return '--';
+    final match = RegExp(r'([0-9]+)\s*/\s*([0-9]+)').firstMatch(score);
+    if (match == null) return score;
+    final achieved = int.tryParse(match.group(1)!) ?? 0;
+    final total = int.tryParse(match.group(2)!) ?? 1;
+    if (total == 0) return '--';
+    return '${((achieved / total) * 100).round()}%';
+  }
+
+  String _scoreTag(String? score) {
+    final percentString = _scorePercentage(score);
+    final percent = int.tryParse(percentString.replaceAll('%', '')) ?? 0;
+    if (percent >= 90) return 'Exceptional';
+    if (percent >= 75) return 'Strong';
+    if (percent >= 60) return 'Good';
+    if (percent > 0) return 'Needs polish';
+    return 'Ready';
+  }
+
+  Widget _buildSectionCard({
+    required String title,
+    required Widget child,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(18.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 20,
+            offset: Offset(0, 12.h),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w700,
+              color: Colors.black87,
+            ),
+          ),
+          SizedBox(height: 12.h),
+          child,
+        ],
+      ),
+    );
+  }
+
   Widget _buildMotivationSection() {
     return Container(
       width: double.infinity,
@@ -812,9 +942,9 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildStatCard(
-                        label: 'Pages scanned',
+                        label: 'AI modules active',
                         value: _currentStats[0],
-                        icon: Icons.menu_book,
+                        icon: Icons.memory,
                         color: Colors.indigo,
                       ),
                       SizedBox(width: 14.w),
@@ -1116,115 +1246,196 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
                             final suggestions = parsed['suggestions'] as List<String>;
                             final breakdown = parsed['breakdown'] as List<String>;
                             final paragraphs = parsed['paragraphs'] as List<String>;
+                            final scorePercent = _scorePercentage(score);
+                            final gradeTag = _scoreTag(score);
+                            final headline = intro.isNotEmpty
+                                ? intro.replaceAll('*', '')
+                                : 'Detailed evaluation complete. Your AI examiner is ready with feedback.';
 
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                Container(
+                                  width: double.infinity,
+                                  padding: EdgeInsets.all(22.w),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: const [
+                                        Color(0xFF2B3A80),
+                                        Color(0xFF5A72C8),
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    borderRadius: BorderRadius.circular(24.r),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.14),
+                                        blurRadius: 24,
+                                        offset: Offset(0, 14.h),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Container(
+                                            width: 56.w,
+                                            height: 56.w,
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withOpacity(0.18),
+                                              borderRadius: BorderRadius.circular(16.r),
+                                            ),
+                                            child: Icon(
+                                              Icons.verified,
+                                              color: Colors.white,
+                                              size: 28.sp,
+                                            ),
+                                          ),
+                                          SizedBox(width: 14.w),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  'Evaluation Complete',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 18.sp,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                                ),
+                                                SizedBox(height: 6.h),
+                                                Text(
+                                                  'Your answer has been reviewed by our AI examiner.',
+                                                  style: TextStyle(
+                                                    color: Colors.white70,
+                                                    fontSize: 14.sp,
+                                                    height: 1.6,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      SizedBox(height: 22.h),
+                                      Row(
+                                        children: [
+                                          _buildResultMetric(
+                                            title: 'Score',
+                                            value: score ?? '--',
+                                            icon: Icons.star,
+                                            color: Colors.amber,
+                                          ),
+                                          SizedBox(width: 14.w),
+                                          _buildResultMetric(
+                                            title: 'Accuracy',
+                                            value: scorePercent,
+                                            icon: Icons.speed,
+                                            color: Colors.lightBlue,
+                                          ),
+                                          SizedBox(width: 14.w),
+                                          _buildResultMetric(
+                                            title: 'Rating',
+                                            value: gradeTag,
+                                            icon: Icons.trending_up,
+                                            color: Colors.green,
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(height: 24.h),
                                 if ((model.questionText?.isNotEmpty ?? false) ||
                                     (model.questionId?.isNotEmpty ?? false)) ...[
-                                  Text(
-                                    model.questionText?.isNotEmpty == true
-                                        ? 'Question: ${model.questionText}'
-                                        : 'Question ID: ${model.questionId}',
-                                    style: TextStyle(
-                                      fontSize: 15.sp,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                  SizedBox(height: 12.h),
-                                ],
-                                if (model.answerText?.isNotEmpty ?? false) ...[
-                                  Text(
-                                    'Your answer:',
-                                    style: TextStyle(
-                                      fontSize: 15.sp,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                  SizedBox(height: 8.h),
-                                  Text(
-                                    model.answerText!.trim(),
-                                    style: TextStyle(
-                                      fontSize: 15.sp,
-                                      color: Colors.grey[800],
-                                      height: 1.6,
-                                    ),
-                                  ),
-                                  SizedBox(height: 16.h),
-                                ],
-                                if (score != null) ...[
-                                  Text(
-                                    'Score: $score',
-                                    style: TextStyle(
-                                      fontSize: 16.sp,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                  SizedBox(height: 12.h),
-                                ],
-                                if (intro.isNotEmpty) ...[
-                                  Text(
-                                    intro.replaceAll('*', ''),
-                                    style: TextStyle(
-                                      fontSize: 15.sp,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.grey[800],
-                                    ),
-                                  ),
-                                  SizedBox(height: 16.h),
-                                ],
-                                if (breakdown.isNotEmpty) ...[
-                                  Text(
-                                    'Breakdown:',
-                                    style: TextStyle(
-                                      fontSize: 15.sp,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                  SizedBox(height: 12.h),
-                                  _buildSuggestionList(breakdown),
-                                  SizedBox(height: 16.h),
-                                ],
-                                if (suggestions.isNotEmpty) ...[
-                                  Text(
-                                    'Suggested improvements:',
-                                    style: TextStyle(
-                                      fontSize: 15.sp,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                  SizedBox(height: 12.h),
-                                  _buildSuggestionList(suggestions),
-                                ] else if (paragraphs.isNotEmpty) ...[
-                                  ...paragraphs.map(
-                                    (paragraph) => Padding(
-                                      padding: EdgeInsets.only(bottom: 12.h),
-                                      child: Text(
-                                        paragraph,
-                                        style: TextStyle(
-                                          fontSize: 15.sp,
-                                          color: Colors.black87,
-                                          height: 1.6,
-                                        ),
+                                  _buildSectionCard(
+                                    title: 'Question details',
+                                    child: Text(
+                                      model.questionText?.isNotEmpty == true
+                                          ? model.questionText!
+                                          : 'Question ID: ${model.questionId}',
+                                      style: TextStyle(
+                                        fontSize: 14.sp,
+                                        color: Colors.grey[800],
+                                        height: 1.7,
                                       ),
                                     ),
                                   ),
-                                ] else ...[
-                                  Text(
-                                    model.comments ?? model.eval ??
-                                        'No detailed feedback was returned.',
-                                    style: TextStyle(
-                                      fontSize: 15.sp,
-                                      color: Colors.black87,
-                                      height: 1.6,
+                                  SizedBox(height: 18.h),
+                                ],
+                                if (model.answerText?.isNotEmpty ?? false) ...[
+                                  _buildSectionCard(
+                                    title: 'Your submitted answer',
+                                    child: Text(
+                                      model.answerText!.trim(),
+                                      style: TextStyle(
+                                        fontSize: 14.sp,
+                                        color: Colors.grey[800],
+                                        height: 1.7,
+                                      ),
                                     ),
                                   ),
+                                  SizedBox(height: 18.h),
                                 ],
+                                _buildSectionCard(
+                                  title: 'What the AI found',
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        headline,
+                                        style: TextStyle(
+                                          fontSize: 14.sp,
+                                          color: Colors.grey[800],
+                                          height: 1.7,
+                                        ),
+                                      ),
+                                      if (breakdown.isNotEmpty) ...[
+                                        SizedBox(height: 14.h),
+                                        _buildSuggestionList(breakdown),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(height: 18.h),
+                                _buildSectionCard(
+                                  title: 'Suggested improvements',
+                                  child: suggestions.isNotEmpty
+                                      ? _buildSuggestionList(suggestions)
+                                      : paragraphs.isNotEmpty
+                                          ? Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: paragraphs.map(
+                                                (paragraph) {
+                                                  return Padding(
+                                                    padding: EdgeInsets.only(bottom: 12.h),
+                                                    child: Text(
+                                                      paragraph,
+                                                      style: TextStyle(
+                                                        fontSize: 14.sp,
+                                                        color: Colors.grey[800],
+                                                        height: 1.7,
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                              ).toList(),
+                                            )
+                                          : Text(
+                                              model.comments ?? model.eval ??
+                                                  'No detailed feedback was returned.',
+                                              style: TextStyle(
+                                                fontSize: 14.sp,
+                                                color: Colors.grey[800],
+                                                height: 1.7,
+                                              ),
+                                            ),
+                                ),
                               ],
                             );
                           },
