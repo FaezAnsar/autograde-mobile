@@ -13,13 +13,15 @@ class EvaluateAnswerCubit extends AppApiCubit<EvalAnswerModel> {
   bool isSuccess = false;
 
   Future<void> evalAns({
-    required File file,
+    File? file,
+    List<File>? files,
     required String subject,
   }) async {
     await call(
       () {
         return _appRemoteDataSource.submitAnswer(
           file: file,
+          files: files,
           subject: subject,
         );
       },

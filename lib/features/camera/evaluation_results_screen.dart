@@ -14,11 +14,13 @@ import 'package:go_router/go_router.dart';
 class EvaluationResultsScreen extends StatefulWidget {
   final String filePath;
   final String subject;
+  final List<String> filePaths;
 
   const EvaluationResultsScreen({
     super.key,
     required this.filePath,
     required this.subject,
+    this.filePaths = const [],
   });
 
   @override
@@ -79,8 +81,10 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
   }
 
   void _submitForEvaluation() {
-    final file = File(widget.filePath);
-    _evalCubit.evalAns(file: file, subject: widget.subject);
+    final List<File> uploadFiles = widget.filePaths.isNotEmpty
+        ? widget.filePaths.map((path) => File(path)).toList()
+        : [File(widget.filePath)];
+    _evalCubit.evalAns(files: uploadFiles, subject: widget.subject);
   }
 
   void _startLoadingAnimations() {
@@ -850,6 +854,156 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
     );
   }
 
+  Widget _buildQuestionResultCard(EvalQuestionModel question) {
+    final parsed = _parseEvaluationText(question.comments ?? '');
+    final suggestions = parsed['suggestions'] as List<String>;
+    final breakdown = parsed['breakdown'] as List<String>;
+    final paragraphs = parsed['paragraphs'] as List<String>;
+    final title = question.questionText?.isNotEmpty == true
+        ? question.questionText!
+        : 'Question ID: ${question.questionId ?? 'Unknown'}';
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18.r),
+        border: Border.all(color: Colors.grey[200]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 14,
+            offset: Offset(0, 8.h),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 36.w,
+                height: 36.w,
+                decoration: BoxDecoration(
+                  color: Colors.teal.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+                child: Icon(
+                  Icons.help_outline,
+                  color: Colors.teal,
+                  size: 20.sp,
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    SizedBox(height: 6.h),
+                    Text(
+                      'Score: ${question.score ?? '--'}',
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (question.answerText?.isNotEmpty ?? false) ...[
+            SizedBox(height: 14.h),
+            Text(
+              'Submitted answer',
+              style: TextStyle(
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
+              ),
+            ),
+            SizedBox(height: 6.h),
+            Text(
+              question.answerText!.trim(),
+              style: TextStyle(
+                fontSize: 14.sp,
+                color: Colors.grey[800],
+                height: 1.6,
+              ),
+            ),
+          ],
+          if (breakdown.isNotEmpty || suggestions.isNotEmpty || paragraphs.isNotEmpty) ...[
+            SizedBox(height: 14.h),
+            if (breakdown.isNotEmpty) ...[
+              Text(
+                'Highlights',
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[800],
+                ),
+              ),
+              SizedBox(height: 10.h),
+              _buildSuggestionList(breakdown),
+            ],
+            if (suggestions.isNotEmpty) ...[
+              SizedBox(height: 10.h),
+              Text(
+                'Suggestions',
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[800],
+                ),
+              ),
+              SizedBox(height: 10.h),
+              _buildSuggestionList(suggestions),
+            ],
+            if (breakdown.isEmpty && suggestions.isEmpty && paragraphs.isNotEmpty) ...[
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: paragraphs.map((paragraph) {
+                  return Padding(
+                    padding: EdgeInsets.only(bottom: 10.h),
+                    child: Text(
+                      paragraph,
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        color: Colors.grey[800],
+                        height: 1.7,
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ] else ...[
+            SizedBox(height: 14.h),
+            Text(
+              question.comments ?? 'No detailed feedback was returned for this question.',
+              style: TextStyle(
+                fontSize: 14.sp,
+                color: Colors.grey[800],
+                height: 1.7,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildMotivationSection() {
     return Container(
       width: double.infinity,
@@ -1238,10 +1392,12 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
                         Builder(
                           builder: (context) {
                             final model = state.data;
+                            final questions = model.questions;
+                            final primaryQuestion = questions.isNotEmpty ? questions.first : null;
                             final parsed = _parseEvaluationText(
-                              model.comments ?? model.eval ?? '',
+                              model.comments ?? model.eval ?? primaryQuestion?.comments ?? '',
                             );
-                            final score = model.score ?? parsed['score'] as String?;
+                            final score = primaryQuestion?.score ?? model.score ?? parsed['score'] as String?;
                             final intro = parsed['intro'] as String;
                             final suggestions = parsed['suggestions'] as List<String>;
                             final breakdown = parsed['breakdown'] as List<String>;
@@ -1436,6 +1592,23 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
                                               ),
                                             ),
                                 ),
+                                if (questions.length > 1) ...[
+                                  SizedBox(height: 18.h),
+                                  _buildSectionCard(
+                                    title: 'Question-by-question results',
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: questions
+                                          .map(
+                                            (question) => Padding(
+                                              padding: EdgeInsets.only(bottom: 16.h),
+                                              child: _buildQuestionResultCard(question),
+                                            ),
+                                          )
+                                          .toList(),
+                                    ),
+                                  ),
+                                ],
                               ],
                             );
                           },

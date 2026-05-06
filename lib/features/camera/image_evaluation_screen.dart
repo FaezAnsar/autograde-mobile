@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:autograde_mobile/configs/routing/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -7,8 +8,13 @@ import 'package:go_router/go_router.dart';
 
 class ImageEvaluationScreen extends HookWidget {
   final List<String> imagePaths;
+  final String subject;
 
-  const ImageEvaluationScreen({super.key, required this.imagePaths});
+  const ImageEvaluationScreen({
+    super.key,
+    required this.imagePaths,
+    required this.subject,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -229,13 +235,30 @@ class ImageEvaluationScreen extends HookWidget {
   }
 
   void _startEvaluation(BuildContext context, List<String> finalImageOrder) {
-    // TODO: Implement evaluation process
     debugPrint('Starting evaluation with ${finalImageOrder.length} images');
     debugPrint(
       'Final order: ${finalImageOrder.map((path) => path.split('/').last).join(', ')}',
     );
 
-    // Show confirmation dialog
+    if (subject.isEmpty) {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Subject Required'),
+            content: const Text('Please select a subject before evaluation.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          );
+        },
+      );
+      return;
+    }
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -252,9 +275,14 @@ class ImageEvaluationScreen extends HookWidget {
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                // TODO: Navigate to evaluation results or processing screen
-                // For now, just go back to main screen
-                context.go('/');
+                context.push(
+                  Routes.evaluationResultsScreen.path,
+                  extra: {
+                    'path': finalImageOrder.first,
+                    'paths': finalImageOrder,
+                    'subject': subject,
+                  },
+                );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.teal,

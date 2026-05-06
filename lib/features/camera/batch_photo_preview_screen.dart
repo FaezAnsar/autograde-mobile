@@ -9,8 +9,13 @@ import 'package:intl/intl.dart';
 
 class BatchPhotoPreviewScreen extends HookWidget {
   final List<String> imagePaths;
+  final String subject;
 
-  const BatchPhotoPreviewScreen({super.key, required this.imagePaths});
+  const BatchPhotoPreviewScreen({
+    super.key,
+    required this.imagePaths,
+    required this.subject,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -338,7 +343,10 @@ class BatchPhotoPreviewScreen extends HookWidget {
     // Navigate to image evaluation screen
     context.push(
       Routes.imageEvaluationScreen.path,
-      extra: List<String>.from(imagePaths),
+      extra: {
+        'imagePaths': List<String>.from(imagePaths),
+        'subject': subject,
+      },
     );
   }
 }

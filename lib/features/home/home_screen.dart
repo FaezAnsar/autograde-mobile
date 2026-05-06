@@ -93,12 +93,31 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _pickBulkFiles() async {
+    if (_selectedSubject == null) {
+      showSnackBar(context, 'Please select a subject before choosing bulk files.');
+      return;
+    }
+
     final FilePickerResult? result = await FilePicker.platform.pickFiles(
       allowMultiple: true,
       type: FileType.image,
     );
-    if (result != null) {
-      setState(() => _bulkUploadCount = result.files.length);
+    if (result != null && result.files.isNotEmpty) {
+      final paths = result.files
+          .where((file) => file.path != null)
+          .map((file) => file.path!)
+          .toList();
+
+      if (paths.isEmpty) return;
+
+      setState(() => _bulkUploadCount = paths.length);
+      context.push(
+        Routes.batchPhotoPreviewScreen.path,
+        extra: {
+          'imagePaths': paths,
+          'subject': _selectedSubject!,
+        },
+      );
     }
   }
 

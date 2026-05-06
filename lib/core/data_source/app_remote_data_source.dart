@@ -29,18 +29,32 @@ class AppRemoteDataSource extends BaseRemoteDataSource {
   }
 
   Future<BaseResponse<EvalAnswerModel>> submitAnswer({
-    required File file,
+    File? file,
+    List<File>? files,
     required String subject,
   }) async {
-    final fileName = file.path.split(RegExp(r'[\\/]+')).last;
-    final formData = FormData.fromMap({
-      'file': await MultipartFile.fromFile(
+    final formData = FormData();
+    formData.fields.add(MapEntry('subject', subject));
+
+    if (files != null && files.isNotEmpty) {
+      for (final fileItem in files) {
+        final fileName = fileItem.path.split(RegExp(r'[\\/]+')).last;
+        final multipartFile = await MultipartFile.fromFile(
+          fileItem.path,
+          filename: fileName,
+        );
+        formData.files.add(MapEntry('file', multipartFile));
+      }
+    } else if (file != null) {
+      final fileName = file.path.split(RegExp(r'[\\/]+')).last;
+      final multipartFile = await MultipartFile.fromFile(
         file.path,
         filename: fileName,
-      ),
-      'subject': subject,
-    });
-
+      );
+      formData.files.add(MapEntry('file', multipartFile));
+    } else {
+      throw ArgumentError('Either file or files must be provided.');
+    }
     final token = locator<AuthCubit>().getCurrentToken();
     final headers = <String, dynamic>{};
     if (token != null && token.isNotEmpty) {

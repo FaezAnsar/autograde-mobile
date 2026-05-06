@@ -82,25 +82,54 @@ final router = GoRouter(
     GoRoute(
       path: Routes.batchPhotoPreviewScreen.path,
       builder: (context, state) {
+        final extra = state.extra;
+        if (extra is Map) {
+          final imagePaths = (extra['imagePaths'] as List<dynamic>?)
+                  ?.cast<String>() ??
+              [];
+          final subject = extra['subject'] as String? ?? '';
+          return BatchPhotoPreviewScreen(
+            imagePaths: imagePaths,
+            subject: subject,
+          );
+        }
+
         final List<String> imagePaths = (state.extra as List<String>?) ?? [];
-        return BatchPhotoPreviewScreen(imagePaths: imagePaths);
+        return BatchPhotoPreviewScreen(imagePaths: imagePaths, subject: '');
       },
     ),
     GoRoute(
       path: Routes.imageEvaluationScreen.path,
       builder: (context, state) {
+        final extra = state.extra;
+        if (extra is Map) {
+          final imagePaths = (extra['imagePaths'] as List<dynamic>?)
+                  ?.cast<String>() ??
+              [];
+          final subject = extra['subject'] as String? ?? '';
+          return ImageEvaluationScreen(
+            imagePaths: imagePaths,
+            subject: subject,
+          );
+        }
+
         final List<String> imagePaths = (state.extra as List<String>?) ?? [];
-        return ImageEvaluationScreen(imagePaths: imagePaths);
+        return ImageEvaluationScreen(imagePaths: imagePaths, subject: '');
       },
     ),
     GoRoute(
       path: Routes.evaluationResultsScreen.path,
       builder: (context, state) {
         final extra = state.extra;
-        if (extra is Map<String, dynamic>) {
+        if (extra is Map) {
           final path = extra['path'] as String? ?? '';
           final subject = extra['subject'] as String? ?? '';
-          return EvaluationResultsScreen(filePath: path, subject: subject);
+          final filePaths = (extra['paths'] as List<dynamic>?)?.cast<String>() ?? [];
+          return EvaluationResultsScreen(
+            filePath: path,
+            subject: subject,
+            filePaths: filePaths,
+          );
         }
 
         final String path = (state.extra as String?) ?? '';

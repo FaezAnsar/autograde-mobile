@@ -1,5 +1,39 @@
 import 'package:autograde_mobile/core/api/models/api_base_message_model.dart';
 
+class EvalQuestionModel {
+  EvalQuestionModel({
+    this.questionId,
+    this.questionText,
+    this.answerText,
+    this.score,
+    this.comments,
+  });
+
+  factory EvalQuestionModel.fromJson(Map<String, dynamic> json) {
+    return EvalQuestionModel(
+      questionId: json['question_id'] as String?,
+      questionText: json['question_text'] as String?,
+      answerText: json['answer_text'] as String?,
+      score: json['score'] as String?,
+      comments: json['comments'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'question_id': questionId,
+        'question_text': questionText,
+        'answer_text': answerText,
+        'score': score,
+        'comments': comments,
+      };
+
+  final String? questionId;
+  final String? questionText;
+  final String? answerText;
+  final String? score;
+  final String? comments;
+}
+
 class EvalAnswerModel extends ApiBaseMessageModel {
   EvalAnswerModel({
     super.message,
@@ -9,6 +43,7 @@ class EvalAnswerModel extends ApiBaseMessageModel {
     this.answerText,
     this.score,
     this.comments,
+    this.questions = const [],
   });
 
   EvalAnswerModel.fromJson(Map<String, dynamic> json)
@@ -20,6 +55,7 @@ class EvalAnswerModel extends ApiBaseMessageModel {
           answerText: _extractAnswerText(json),
           score: _extractScore(json),
           comments: _extractComments(json),
+          questions: _extractQuestions(json),
         );
 
   static Map<String, dynamic>? _extractEvaluation(Map<String, dynamic> json) {
@@ -38,6 +74,19 @@ class EvalAnswerModel extends ApiBaseMessageModel {
     }
 
     return null;
+  }
+
+  static List<EvalQuestionModel> _extractQuestions(Map<String, dynamic> json) {
+    final evaluation = _extractEvaluation(json);
+    if (evaluation == null || evaluation['questions'] is! List) {
+      return const [];
+    }
+
+    final questions = evaluation['questions'] as List;
+    return questions
+        .whereType<Map<String, dynamic>>()
+        .map(EvalQuestionModel.fromJson)
+        .toList();
   }
 
   static Map<String, dynamic>? _extractFirstQuestion(Map<String, dynamic> json) {
@@ -118,6 +167,7 @@ class EvalAnswerModel extends ApiBaseMessageModel {
         'answer_text': answerText,
         'score': score,
         'comments': comments,
+        'questions': questions.map((item) => item.toJson()).toList(),
       };
 
   final String? eval;
@@ -126,4 +176,5 @@ class EvalAnswerModel extends ApiBaseMessageModel {
   final String? answerText;
   final String? score;
   final String? comments;
+  final List<EvalQuestionModel> questions;
 }
