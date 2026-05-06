@@ -22,7 +22,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String? _selectedImagePath;
   String? _selectedPdfName;
   String? _selectedSubject;
   int _bulkUploadCount = 0;
@@ -84,9 +83,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
     if (!mounted) return;
     if (image != null) {
-      setState(() => _selectedImagePath = image.path);
-      await context.push(
-        Routes.evaluationResultsScreen.path,
+      await context.pushNamed(
+        'imagePreview',
         extra: {
           'path': image.path,
           'subject': _selectedSubject!,
@@ -189,10 +187,6 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildUploadGrid(),
               SizedBox(height: 10.h),
               _buildPickImageTile(),
-              if (_selectedImagePath != null) ...[
-                SizedBox(height: 20.h),
-                _buildImagePreview(),
-              ],
               if (_selectedPdfName != null) ...[
                 SizedBox(height: 20.h),
                 _buildPdfPreview(),
@@ -642,25 +636,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ─── Previews ─────────────────────────────────────────────────────────────
-
-  Widget _buildImagePreview() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionLabel('Selected image'),
-        SizedBox(height: 10.h),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(16.r),
-          child: Image.file(
-            File(_selectedImagePath!),
-            width: double.infinity,
-            height: 200.h,
-            fit: BoxFit.cover,
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildPdfPreview() {
     return Column(

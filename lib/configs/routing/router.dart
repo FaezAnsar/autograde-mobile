@@ -5,6 +5,7 @@ import 'package:autograde_mobile/features/auth/login_screen.dart';
 import 'package:autograde_mobile/features/auth/signup_screen.dart';
 import 'package:autograde_mobile/features/camera/evaluation_results_screen.dart';
 import 'package:autograde_mobile/features/camera/image_evaluation_screen.dart';
+import 'package:autograde_mobile/features/camera/image_preview_screen.dart';
 import 'package:autograde_mobile/features/home/home_screen.dart';
 import 'package:autograde_mobile/features/profile/profile_screen.dart';
 import 'package:autograde_mobile/features/splash_screen.dart';
@@ -116,6 +117,24 @@ final router = GoRouter(
 
         final List<String> imagePaths = (state.extra as List<String>?) ?? [];
         return ImageEvaluationScreen(imagePaths: imagePaths, subject: '');
+      },
+    ),
+    GoRoute(
+      name: 'imagePreview',
+      path: Routes.imagePreviewScreen.path,
+      builder: (context, state) {
+        final extra = state.extra;
+        if (extra is Map) {
+          final path = extra['path'] as String? ?? '';
+          final subject = extra['subject'] as String? ?? '';
+          return ImagePreviewScreen(
+            imagePath: path,
+            subject: subject,
+          );
+        }
+
+        final String path = (state.extra as String?) ?? '';
+        return ImagePreviewScreen(imagePath: path, subject: '');
       },
     ),
     GoRoute(

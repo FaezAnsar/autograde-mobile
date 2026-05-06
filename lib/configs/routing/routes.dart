@@ -32,6 +32,7 @@ enum Routes {
   cameraScreen('/camera'),
   batchPhotoPreviewScreen('/batch-photo-preview'),
   imageEvaluationScreen('/image-evaluation'),
+  imagePreviewScreen('/image-preview'),
   evaluationResultsScreen('/evaluation-results'),
   favoritePostsScreen('/favorite-posts'),
   reportScreen('/report'),
