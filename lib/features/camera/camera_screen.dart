@@ -13,7 +13,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class CameraScreen extends HookWidget {
-  const CameraScreen({super.key});
+  final bool showOtherSources;
+
+  const CameraScreen({super.key, this.showOtherSources = false});
 
   @override
   Widget build(BuildContext context) {
@@ -307,61 +309,94 @@ class CameraScreen extends HookWidget {
                       ],
                     )
                   : // Single mode controls
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        // Documents button (left)
-                        _buildControlButton(
-                          icon: Icons.description,
-                          label: 'Documents',
-                          onTap: () => _selectDocuments(
-                            selectedFiles,
-                            selectedSubject.value ?? '',
-                            context,
-                          ),
-                        ),
-
-                        // Camera capture button (center)
-                        GestureDetector(
-                          onTap: () => _capturePhoto(
-                            cameraController.value,
-                            capturedImages,
-                            isSingleMode.value,
-                            showPreview,
-                          ),
-                          child: Container(
-                            width: 80.w,
-                            height: 80.w,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white,
-                                width: 4.w,
+                    showOtherSources
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              // Documents button (left)
+                              _buildControlButton(
+                                icon: Icons.description,
+                                label: 'Documents',
+                                onTap: () => _selectDocuments(
+                                  selectedFiles,
+                                  selectedSubject.value ?? '',
+                                  context,
+                                ),
                               ),
-                              color: Colors.transparent,
-                            ),
-                            child: Container(
-                              margin: EdgeInsets.all(6.r),
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
 
-                        // Gallery button (right)
-                        _buildControlButton(
-                          icon: Icons.photo_library,
-                          label: 'Gallery',
-                          onTap: () => _selectFromGallery(
-                            capturedImages,
-                            isSingleMode.value,
-                            showPreview,
+                              // Camera capture button (center)
+                              GestureDetector(
+                                onTap: () => _capturePhoto(
+                                  cameraController.value,
+                                  capturedImages,
+                                  isSingleMode.value,
+                                  showPreview,
+                                ),
+                                child: Container(
+                                  width: 80.w,
+                                  height: 80.w,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 4.w,
+                                    ),
+                                    color: Colors.transparent,
+                                  ),
+                                  child: Container(
+                                    margin: EdgeInsets.all(6.r),
+                                    decoration: const BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              // Gallery button (right)
+                              _buildControlButton(
+                                icon: Icons.photo_library,
+                                label: 'Gallery',
+                                onTap: () => _selectFromGallery(
+                                  capturedImages,
+                                  isSingleMode.value,
+                                  showPreview,
+                                ),
+                              ),
+                            ],
+                          )
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              GestureDetector(
+                                onTap: () => _capturePhoto(
+                                  cameraController.value,
+                                  capturedImages,
+                                  isSingleMode.value,
+                                  showPreview,
+                                ),
+                                child: Container(
+                                  width: 80.w,
+                                  height: 80.w,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 4.w,
+                                    ),
+                                    color: Colors.transparent,
+                                  ),
+                                  child: Container(
+                                    margin: EdgeInsets.all(6.r),
+                                    decoration: const BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
-                    ),
             ),
 
           // Show captured images count in batch mode

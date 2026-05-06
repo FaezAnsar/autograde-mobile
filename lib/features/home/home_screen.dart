@@ -304,20 +304,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      actions: [
-        Padding(
-          padding: EdgeInsets.only(right: 20.w),
-          child: GestureDetector(
-            onTap: () => context.go(Routes.signInScreen.path),
-            child: CircleAvatar(
-              radius: 17.r,
-              backgroundColor: const Color(0xFFEDEDEB),
-              child: Icon(Icons.person_outline,
-                  size: 18.sp, color: const Color(0xFF666666)),
-            ),
-          ),
-        ),
-      ],
     );
   }
 

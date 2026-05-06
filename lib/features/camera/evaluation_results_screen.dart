@@ -65,7 +65,6 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
     'Check for neat and readable handwriting.',
     'Link examples directly to the question.',
   ];
-  final List<int> _targetStats = [3, 12, 8, 94];
   List<int> _currentStats = [0, 0, 0, 0];
 
   @override
@@ -1065,10 +1064,7 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.black, size: 24.sp),
-          onPressed: () => context.pop(),
-        ),
+        automaticallyImplyLeading: false,
         title: Text(
           'Evaluation Results',
           style: TextStyle(
@@ -1079,8 +1075,10 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
         ),
         centerTitle: true,
       ),
-      body: BlocBuilder<EvaluateAnswerCubit, ApiState>(
-        bloc: _evalCubit,
+      body: WillPopScope(
+        onWillPop: () async => false,
+        child: BlocBuilder<EvaluateAnswerCubit, ApiState>(
+          bloc: _evalCubit,
         builder: (context, state) {
           if (state is ApiLoadingState) {
             return SingleChildScrollView(
@@ -1667,7 +1665,9 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
                               ),
                               SizedBox(height: 16.h),
                               ElevatedButton(
-                                onPressed: _submitForEvaluation,
+                                onPressed: () {
+                                  context.go(Routes.homeScreen.path);
+                                },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.red,
                                   foregroundColor: Colors.white,
@@ -1677,7 +1677,7 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
                                   ),
                                 ),
                                 child: Text(
-                                  'Retry Evaluation',
+                                  'Go to Home',
                                   style: TextStyle(
                                     fontSize: 14.sp,
                                     fontWeight: FontWeight.w600,
@@ -1717,6 +1717,6 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
           );
         },
       ),
-    );
+    ));
   }
 }
