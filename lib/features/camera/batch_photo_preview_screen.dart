@@ -80,7 +80,7 @@ class BatchPhotoPreviewScreen extends HookWidget {
                     borderRadius: BorderRadius.circular(18.r),
                     child: Container(
                       color: Colors.black,
-                      child: InteractiveViewer(
+                              child: InteractiveViewer(
                         minScale: 1,
                         maxScale: 4,
                         child: Image.file(
@@ -88,6 +88,14 @@ class BatchPhotoPreviewScreen extends HookWidget {
                           fit: BoxFit.contain,
                           width: double.infinity,
                           height: double.infinity,
+                          cacheWidth: (MediaQuery.of(context).size.width * 1.5).toInt(),
+                          filterQuality: FilterQuality.medium,
+                          frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                            if (frame == null) {
+                              return const Center(child: CircularProgressIndicator(color: Colors.white));
+                            }
+                            return child;
+                          },
                           errorBuilder: (context, error, stackTrace) {
                             return Container(
                               color: Colors.grey[900],

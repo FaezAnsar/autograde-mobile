@@ -1150,6 +1150,8 @@ Widget _buildFeedbackSection(BuildContext context, ApiState state) {
   Widget _buildAutogradeFeedbackSection(EvalAnswerModel model) {
     final questions = model.questions;
     final isBatch = questions.length > 1;
+    final isPdfUpload = widget.filePath.toLowerCase().endsWith('.pdf');
+    final showBanner = !isBatch && !isPdfUpload;
     final primaryQuestion = questions.isNotEmpty ? questions.first : null;
     final feedbackText = model.comments ?? model.eval ?? primaryQuestion?.comments ?? '';
     final parsed = _parseEvaluationText(feedbackText);
@@ -1169,8 +1171,10 @@ Widget _buildFeedbackSection(BuildContext context, ApiState state) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildEvaluationSummaryBanner(context, score, scorePercent, gradeTag),
-        SizedBox(height: 24.h),
+        if (showBanner) ...[
+          _buildEvaluationSummaryBanner(context, score, scorePercent, gradeTag),
+          SizedBox(height: 24.h),
+        ],
         if (!isBatch &&
             ((model.questionText?.isNotEmpty ?? false) ||
                 (model.questionId?.isNotEmpty ?? false))) ...[
