@@ -116,6 +116,8 @@ class _HomeScreenState extends State<HomeScreen> {
               SizedBox(height: 24.h),
               _buildSectionLabel('Upload'),
               SizedBox(height: 10.h),
+              _buildSubjectSelector(),
+              SizedBox(height: 16.h),
               _buildUploadGrid(),
               SizedBox(height: 10.h),
               _buildPickImageTile(),
@@ -339,6 +341,56 @@ class _HomeScreenState extends State<HomeScreen> {
             bgColor: const Color(0xFFF3F0FF),
             iconColor: const Color(0xFF7F77DD),
             onTap: _pickBulkFiles,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSubjectSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Choose subject',
+          style: TextStyle(
+            fontSize: 12.sp,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF1A1A1A),
+          ),
+        ),
+        SizedBox(height: 10.h),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: _subjectOptions.entries.map((entry) {
+              final selected = _selectedSubject == entry.value;
+              return Padding(
+                padding: EdgeInsets.only(right: 10.w),
+                child: GestureDetector(
+                  onTap: () => setState(() => _selectedSubject = entry.value),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+                    decoration: BoxDecoration(
+                      color: selected ? const Color(0xFF1A1A1A) : Colors.white,
+                      borderRadius: BorderRadius.circular(24.r),
+                      border: Border.all(
+                        color: selected ? const Color(0xFF1A1A1A) : const Color(0xFFE8E6E0),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      entry.key,
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w600,
+                        color: selected ? Colors.white : const Color(0xFF1A1A1A),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
           ),
         ),
       ],

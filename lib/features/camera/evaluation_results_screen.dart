@@ -46,18 +46,21 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen> {
   }
 
   Map<String, dynamic> _parseEvaluationText(String input) {
-    final raw = input.replaceAll('', '').trim();
+    final raw = input.trim();
     final score = _extractScore(raw);
-    final body = _extractSuggestionBody(raw);
-    final bullets = _extractBulletPoints(body);
-    final paragraphs = bullets.isEmpty ? _extractParagraphs(body) : <String>[];
     final intro = _extractIntroText(raw);
+    final suggestions = _extractSectionBulletPoints(raw, 'Suggestions for Improvement');
+    final breakdown = _extractSectionBulletPoints(raw, 'Breakdown');
+    final paragraphs = suggestions.isEmpty && breakdown.isEmpty
+        ? _extractParagraphs(raw)
+        : <String>[];
 
     return {
       'raw': raw,
       'score': score,
       'intro': intro,
-      'bullets': bullets,
+      'suggestions': suggestions,
+      'breakdown': breakdown,
       'paragraphs': paragraphs,
     };
   }
@@ -70,13 +73,16 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen> {
     return match?.group(1)?.replaceAll(' ', '');
   }
 
-  String _extractSuggestionBody(String raw) {
-    if (raw.isEmpty) return raw;
+  List<String> _extractSectionBulletPoints(String raw, String sectionTitle) {
+    if (raw.isEmpty) return <String>[];
 
     final split = raw.split(
-      RegExp(r'Suggestions\s*for\s*Improvement\s*[:\n]+', caseSensitive: false),
+      RegExp('${RegExp.escape(sectionTitle)}\\s*[:\\n]+', caseSensitive: false),
     );
-    return split.length > 1 ? split.sublist(1).join(' ').trim() : raw;
+    if (split.length < 2) return <String>[];
+
+    final section = split.sublist(1).join(' ').trim();
+    return _extractBulletPoints(section);
   }
 
   List<String> _extractBulletPoints(String body) {
@@ -477,18 +483,53 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen> {
                       ] else if (state is ApiLoadedState<EvalAnswerModel>) ...[
                         Builder(
                           builder: (context) {
+                            final model = state.data;
                             final parsed = _parseEvaluationText(
-                              state.data.eval ?? '',
+                              model.comments ?? model.eval ?? '',
                             );
-                            final score = parsed['score'] as String?;
+                            final score = model.score ?? parsed['score'] as String?;
                             final intro = parsed['intro'] as String;
-                            final bullets = parsed['bullets'] as List<String>;
-                            final paragraphs =
-                                parsed['paragraphs'] as List<String>;
+                            final suggestions = parsed['suggestions'] as List<String>;
+                            final breakdown = parsed['breakdown'] as List<String>;
+                            final paragraphs = parsed['paragraphs'] as List<String>;
 
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                if ((model.questionText?.isNotEmpty ?? false) ||
+                                    (model.questionId?.isNotEmpty ?? false)) ...[
+                                  Text(
+                                    model.questionText?.isNotEmpty == true
+                                        ? 'Question: ${model.questionText}'
+                                        : 'Question ID: ${model.questionId}',
+                                    style: TextStyle(
+                                      fontSize: 15.sp,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                  SizedBox(height: 12.h),
+                                ],
+                                if (model.answerText?.isNotEmpty ?? false) ...[
+                                  Text(
+                                    'Your answer:',
+                                    style: TextStyle(
+                                      fontSize: 15.sp,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                  SizedBox(height: 8.h),
+                                  Text(
+                                    model.answerText!.trim(),
+                                    style: TextStyle(
+                                      fontSize: 15.sp,
+                                      color: Colors.grey[800],
+                                      height: 1.6,
+                                    ),
+                                  ),
+                                  SizedBox(height: 16.h),
+                                ],
                                 if (score != null) ...[
                                   Text(
                                     'Score: $score',
@@ -511,7 +552,20 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen> {
                                   ),
                                   SizedBox(height: 16.h),
                                 ],
-                                if (bullets.isNotEmpty) ...[
+                                if (breakdown.isNotEmpty) ...[
+                                  Text(
+                                    'Breakdown:',
+                                    style: TextStyle(
+                                      fontSize: 15.sp,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                  SizedBox(height: 12.h),
+                                  _buildSuggestionList(breakdown),
+                                  SizedBox(height: 16.h),
+                                ],
+                                if (suggestions.isNotEmpty) ...[
                                   Text(
                                     'Suggested improvements:',
                                     style: TextStyle(
@@ -521,7 +575,7 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen> {
                                     ),
                                   ),
                                   SizedBox(height: 12.h),
-                                  _buildSuggestionList(bullets),
+                                  _buildSuggestionList(suggestions),
                                 ] else if (paragraphs.isNotEmpty) ...[
                                   ...paragraphs.map(
                                     (paragraph) => Padding(
@@ -538,7 +592,7 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen> {
                                   ),
                                 ] else ...[
                                   Text(
-                                    state.data.eval ??
+                                    model.comments ?? model.eval ??
                                         'No detailed feedback was returned.',
                                     style: TextStyle(
                                       fontSize: 15.sp,

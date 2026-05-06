@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:autograde_mobile/configs/routing/routes.dart';
+import 'package:autograde_mobile/core/constants/app_assets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -68,12 +69,12 @@ class _SplashScreenState extends State<SplashScreen> {
                         ],
                       ),
                       child: Center(
-                        child: Text(
-                          'A',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 48.sp,
-                            fontWeight: FontWeight.bold,
+                        child: ClipOval(
+                          child: Image.asset(
+                            AppAssets.splashImagePath,
+                            width: 96.w,
+                            height: 96.w,
+                            fit: BoxFit.contain,
                           ),
                         ),
                       ),
