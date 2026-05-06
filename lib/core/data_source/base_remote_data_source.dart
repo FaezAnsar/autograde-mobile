@@ -43,6 +43,9 @@ abstract class BaseRemoteDataSource with ApiErrorHandlers, DioCacheManager {
               BaseOptions(
                 baseUrl: baseUrl,
                 contentType: contentType,
+                connectTimeout: const Duration(seconds: 15),
+                sendTimeout: const Duration(seconds: 15),
+                receiveTimeout: const Duration(seconds: 15),
                 headers: {
                   HttpHeaders.acceptHeader: Headers.jsonContentType,
                   ...baseHeaders,

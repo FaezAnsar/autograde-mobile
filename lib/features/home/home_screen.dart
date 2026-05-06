@@ -36,6 +36,40 @@ class _HomeScreenState extends State<HomeScreen> {
   List<HistoryItemModel> _historyItems = [];
   bool _isHistoryLoading = true;
   String? _historyError;
+  int _visibleHistoryCount = 3;
+  final Set<int> _expandedHistoryIndices = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
+
+  Future<void> _loadHistory() async {
+    setState(() {
+      _isHistoryLoading = true;
+      _historyError = null;
+    });
+
+    final response = await locator<AppRemoteDataSource>().getHistory();
+    if (!mounted) return;
+
+    response.fold(
+      (error) {
+        setState(() {
+          _historyError = error.message;
+          _historyItems = [];
+          _isHistoryLoading = false;
+        });
+      },
+      (items) {
+        setState(() {
+          _historyItems = items;
+          _isHistoryLoading = false;
+        });
+      },
+    );
+  }
 
   Future<void> _pickImage() async {
     if (_selectedSubject == null) {
@@ -99,6 +133,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final String displayName =
         widget.name?.trim().isNotEmpty == true ? widget.name! : 'Learner';
+    final int totalHistoryCount = _historyItems.length;
+    final List<HistoryItemModel> displayHistoryItems =
+        _historyItems.take(_visibleHistoryCount).toList();
+    final bool hasMoreHistory = _visibleHistoryCount < totalHistoryCount;
+    final bool canShowLess = _visibleHistoryCount > 3;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F7F5),
@@ -136,12 +175,76 @@ class _HomeScreenState extends State<HomeScreen> {
               SizedBox(height: 24.h),
               _buildHistoryHeader(),
               SizedBox(height: 12.h),
-              ..._historyItems.map((item) => _buildHistoryCard(item)),
+              if (_isHistoryLoading) ...[
+                Center(
+                  child: SizedBox(
+                    height: 32.h,
+                    width: 32.h,
+                    child: const CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              ] else if (_historyError != null) ...[
+                Text(
+                  _historyError!,
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: const Color(0xFFD32F2F),
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                TextButton(
+                  onPressed: _loadHistory,
+                  child: Text(
+                    'Retry',
+                    style: TextStyle(fontSize: 12.sp),
+                  ),
+                ),
+              ] else if (_historyItems.isEmpty) ...[
+                Text(
+                  'No history available yet.',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: const Color(0xFF999999),
+                  ),
+                ),
+              ] else ...[
+                ...displayHistoryItems.asMap().entries.map(
+                  (entry) => _buildHistoryCard(entry.key, entry.value),
+                ),
+                if (hasMoreHistory || canShowLess) ...[
+                  SizedBox(height: 8.h),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      if (hasMoreHistory)
+                        TextButton(
+                          onPressed: () => setState(() {
+                            _visibleHistoryCount = (_visibleHistoryCount + 5)
+                                .clamp(3, totalHistoryCount);
+                          }),
+                          child: Text(
+                            'Show more',
+                            style: TextStyle(fontSize: 12.sp),
+                          ),
+                        ),
+                      if (canShowLess)
+                        TextButton(
+                          onPressed: () => setState(() {
+                            _visibleHistoryCount = 3;
+                          }),
+                          child: Text(
+                            'Show less',
+                            style: TextStyle(fontSize: 12.sp),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ],
             ],
-          ),
         ),
       ),
-    );
+    ));
   }
 
   // ─── AppBar ───────────────────────────────────────────────────────────────
@@ -534,7 +637,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildHistoryHeader() {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
@@ -546,92 +649,126 @@ class _HomeScreenState extends State<HomeScreen> {
             letterSpacing: 0.9,
           ),
         ),
-        Text(
-          'See all',
-          style: TextStyle(
-              fontSize: 12.sp,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFF378ADD)),
-        ),
       ],
     );
   }
 
-  Widget _buildHistoryCard(HistoryItemModel item) {
+  Widget _buildHistoryCard(int index, HistoryItemModel item) {
     final bool isPdf = item.paperCode.toLowerCase() == 'pdf';
     final bool isCompleted = true;
+    final bool isExpanded = _expandedHistoryIndices.contains(index);
 
     return Padding(
       padding: EdgeInsets.only(bottom: 8.h),
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border.all(color: const Color(0xFFE8E6E0), width: 0.5),
           borderRadius: BorderRadius.circular(14.r),
         ),
-        child: Row(
-          children: [
-            Container(
-              width: 36.w,
-              height: 36.w,
-              decoration: BoxDecoration(
-                color: isPdf
-                    ? const Color(0xFFFEF2F2)
-                    : const Color(0xFFF3F0FF),
-                borderRadius: BorderRadius.circular(10.r),
-              ),
-              child: Icon(
-                isPdf
-                    ? Icons.picture_as_pdf_rounded
-                    : Icons.image_rounded,
-                color: isPdf
-                    ? const Color(0xFFE24B4A)
-                    : const Color(0xFF7F77DD),
-                size: 18.sp,
-              ),
-            ),
-            SizedBox(width: 12.w),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.questionId ?? '',
-                    style: TextStyle(
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF1A1A1A)),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: 2.h),
-                  Text(
-                    item.createdAt ?? '',
-                    style: TextStyle(
-                        fontSize: 11.sp, color: const Color(0xFFAAAAAA)),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              padding:
-                  EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-              decoration: BoxDecoration(
-                color: isCompleted
-                    ? const Color(0xFFEDFAF4)
-                    : const Color(0xFFFAEEDA),
-                borderRadius: BorderRadius.circular(8.r),
-              ),
-              child: Text(
-                'Checked' ?? '',
-                style: TextStyle(
-                  fontSize: 11.sp,
-                  fontWeight: FontWeight.w600,
-                  color: isCompleted
-                      ? const Color(0xFF0F6E56)
-                      : const Color(0xFF854F0B),
+        child: ExpansionTile(
+          key: ValueKey(item.questionId.isNotEmpty ? item.questionId : index),
+          tilePadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 0),
+          childrenPadding:
+              EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+          backgroundColor: Colors.white,
+          collapsedBackgroundColor: Colors.white,
+          onExpansionChanged: (expanded) {
+            setState(() {
+              if (expanded) {
+                _expandedHistoryIndices.add(index);
+              } else {
+                _expandedHistoryIndices.remove(index);
+              }
+            });
+          },
+          title: Row(
+            children: [
+              Container(
+                width: 36.w,
+                height: 36.w,
+                decoration: BoxDecoration(
+                  color: isPdf
+                      ? const Color(0xFFFEF2F2)
+                      : const Color(0xFFF3F0FF),
+                  borderRadius: BorderRadius.circular(10.r),
+                ),
+                child: Icon(
+                  isPdf ? Icons.picture_as_pdf_rounded : Icons.image_rounded,
+                  color: isPdf ? const Color(0xFFE24B4A) : const Color(0xFF7F77DD),
+                  size: 18.sp,
                 ),
               ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.questionId,
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF1A1A1A),
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 2.h),
+                    Text(
+                      item.createdAt,
+                      style: TextStyle(
+                        fontSize: 11.sp,
+                        color: const Color(0xFFAAAAAA),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                decoration: BoxDecoration(
+                  color: isCompleted
+                      ? const Color(0xFFEDFAF4)
+                      : const Color(0xFFFAEEDA),
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                child: Text(
+                  'Checked',
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w600,
+                    color: isCompleted
+                        ? const Color(0xFF0F6E56)
+                        : const Color(0xFF854F0B),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Evaluation result',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF1A1A1A),
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                Text(
+                  item.evaluationText.isNotEmpty
+                      ? item.evaluationText
+                      : 'No detailed result available.',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: const Color(0xFF666666),
+                    height: 1.4,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
