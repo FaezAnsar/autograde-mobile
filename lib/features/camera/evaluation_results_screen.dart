@@ -477,15 +477,26 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
                     ),
                   ),
                   SizedBox(height: 12.h),
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 500),
-                    child: Text(
-                      _statusMessages[_statusIndex],
-                      key: ValueKey(_statusIndex),
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14.sp,
-                        height: 1.55,
+                  SizedBox(
+                    width: double.infinity,
+                    height: 42.h,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 500),
+                        switchInCurve: Curves.easeInOut,
+                        transitionBuilder: (child, animation) {
+                          return FadeTransition(opacity: animation, child: child);
+                        },
+                        child: Text(
+                          _statusMessages[_statusIndex],
+                          key: ValueKey(_statusIndex),
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14.sp,
+                            height: 1.55,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -1090,40 +1101,45 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
                   SizedBox(height: 24.h),
                   _buildProgressSection(),
                   SizedBox(height: 24.h),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  Wrap(
+                    spacing: 14.w,
+                    runSpacing: 14.h,
                     children: [
-                      _buildStatCard(
-                        label: 'AI modules active',
-                        value: _currentStats[0],
-                        icon: Icons.memory,
-                        color: Colors.indigo,
+                      SizedBox(
+                        width: (MediaQuery.of(context).size.width - 40.w - 14.w) / 2,
+                        child: _buildStatCard(
+                          label: 'AI modules active',
+                          value: _currentStats[0],
+                          icon: Icons.memory,
+                          color: Colors.indigo,
+                        ),
                       ),
-                      SizedBox(width: 14.w),
-                      _buildStatCard(
-                        label: 'Key concepts',
-                        value: _currentStats[1],
-                        icon: Icons.lightbulb,
-                        color: Colors.teal,
+                      SizedBox(
+                        width: (MediaQuery.of(context).size.width - 40.w - 14.w) / 2,
+                        child: _buildStatCard(
+                          label: 'Key concepts',
+                          value: _currentStats[1],
+                          icon: Icons.lightbulb,
+                          color: Colors.teal,
+                        ),
                       ),
-                    ],
-                  ),
-                  SizedBox(height: 14.h),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildStatCard(
-                        label: 'Points matched',
-                        value: _currentStats[2],
-                        icon: Icons.check_circle,
-                        color: Colors.blue,
+                      SizedBox(
+                        width: (MediaQuery.of(context).size.width - 40.w - 14.w) / 2,
+                        child: _buildStatCard(
+                          label: 'Points matched',
+                          value: _currentStats[2],
+                          icon: Icons.check_circle,
+                          color: Colors.blue,
+                        ),
                       ),
-                      SizedBox(width: 14.w),
-                      _buildStatCard(
-                        label: 'Confidence',
-                        value: _currentStats[3],
-                        icon: Icons.shield,
-                        color: Colors.green,
+                      SizedBox(
+                        width: (MediaQuery.of(context).size.width - 40.w - 14.w) / 2,
+                        child: _buildStatCard(
+                          label: 'Confidence',
+                          value: _currentStats[3],
+                          icon: Icons.shield,
+                          color: Colors.green,
+                        ),
                       ),
                     ],
                   ),
@@ -1357,36 +1373,7 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
                         ],
                       ),
                       SizedBox(height: 16.h),
-                      if (state is ApiLoadingState) ...[
-                        Center(
-                          child: Column(
-                            children: [
-                              CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.teal,
-                                ),
-                              ),
-                              SizedBox(height: 16.h),
-                              Text(
-                                'Evaluating your answer...',
-                                style: TextStyle(
-                                  fontSize: 16.sp,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                              SizedBox(height: 8.h),
-                              Text(
-                                'Please wait while we analyze your response.',
-                                style: TextStyle(
-                                  fontSize: 14.sp,
-                                  color: Colors.grey[500],
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ] else if (state is ApiLoadedState<EvalAnswerModel>) ...[
+                      if (state is ApiLoadedState<EvalAnswerModel>) ...[
                         Builder(
                           builder: (context) {
                             final model = state.data;
@@ -1480,27 +1467,36 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
                                         ],
                                       ),
                                       SizedBox(height: 22.h),
-                                      Row(
+                                      Wrap(
+                                        spacing: 14.w,
+                                        runSpacing: 14.h,
                                         children: [
-                                          _buildResultMetric(
-                                            title: 'Score',
-                                            value: score ?? '--',
-                                            icon: Icons.star,
-                                            color: Colors.amber,
+                                          SizedBox(
+                                            width: (MediaQuery.of(context).size.width - 44.w - 28.w) / 3,
+                                            child: _buildResultMetric(
+                                              title: 'Score',
+                                              value: score ?? '--',
+                                              icon: Icons.star,
+                                              color: Colors.amber,
+                                            ),
                                           ),
-                                          SizedBox(width: 14.w),
-                                          _buildResultMetric(
-                                            title: 'Accuracy',
-                                            value: scorePercent,
-                                            icon: Icons.speed,
-                                            color: Colors.lightBlue,
+                                          SizedBox(
+                                            width: (MediaQuery.of(context).size.width - 44.w - 28.w) / 3,
+                                            child: _buildResultMetric(
+                                              title: 'Accuracy',
+                                              value: scorePercent,
+                                              icon: Icons.speed,
+                                              color: Colors.lightBlue,
+                                            ),
                                           ),
-                                          SizedBox(width: 14.w),
-                                          _buildResultMetric(
-                                            title: 'Rating',
-                                            value: gradeTag,
-                                            icon: Icons.trending_up,
-                                            color: Colors.green,
+                                          SizedBox(
+                                            width: (MediaQuery.of(context).size.width - 44.w - 28.w) / 3,
+                                            child: _buildResultMetric(
+                                              title: 'Rating',
+                                              value: gradeTag,
+                                              icon: Icons.trending_up,
+                                              color: Colors.green,
+                                            ),
                                           ),
                                         ],
                                       ),
