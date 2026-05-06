@@ -887,6 +887,269 @@ Widget _buildFeedbackSection(BuildContext context, ApiState state) {
     );
   }
 
+  bool _isImagePath(String path) {
+    return RegExp(r'\.(jpe?g|png|gif|bmp|webp) ?', caseSensitive: false)
+        .hasMatch(path);
+  }
+
+  Widget _buildFilePreview(BuildContext context) {
+    final previewPaths = widget.filePaths.isNotEmpty ? widget.filePaths : [widget.filePath];
+    final imagePaths = previewPaths.where(_isImagePath).toList();
+    final isBatch = widget.filePaths.isNotEmpty;
+
+    void showImageGallery(BuildContext context, List<String> imagePaths, int initialPage) {
+      final controller = PageController(initialPage: initialPage);
+      var currentPage = initialPage;
+      showDialog(
+        context: context,
+        barrierColor: Colors.black87,
+        builder: (context) {
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => Navigator.of(context).pop(),
+            child: Material(
+              color: Colors.transparent,
+              child: SafeArea(
+                child: StatefulBuilder(
+                  builder: (context, setState) {
+                    return Stack(
+                      children: [
+                        PageView.builder(
+                          controller: controller,
+                          itemCount: imagePaths.length,
+                          onPageChanged: (index) => setState(() => currentPage = index),
+                          itemBuilder: (context, index) {
+                            return InteractiveViewer(
+                              panEnabled: true,
+                              minScale: 1.0,
+                              maxScale: 5.0,
+                              child: Center(
+                                child: Image.file(
+                                  File(imagePaths[index]),
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      color: Colors.black,
+                                      padding: EdgeInsets.all(20.w),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.broken_image,
+                                            color: Colors.white70,
+                                            size: 40.sp,
+                                          ),
+                                          SizedBox(height: 14.h),
+                                          Text(
+                                            'Unable to load image',
+                                            style: TextStyle(
+                                              color: Colors.white70,
+                                              fontSize: 14.sp,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        Positioned(
+                          top: 16.h,
+                          left: 16.w,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                            decoration: BoxDecoration(
+                              color: Colors.black54,
+                              borderRadius: BorderRadius.circular(12.r),
+                            ),
+                            child: Text(
+                              '${currentPage + 1} / ${imagePaths.length}',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    }
+
+    Widget buildTapImage(String path, int index, {String? overlayText}) {
+      return GestureDetector(
+        onTap: () => showImageGallery(context, imagePaths, index),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(18.r),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.file(
+                File(path),
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: Colors.grey[100],
+                    child: Center(
+                      child: Icon(
+                        Icons.broken_image,
+                        color: Colors.grey[400],
+                        size: 28.sp,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              if (overlayText != null)
+                Container(
+                  color: Colors.black.withOpacity(0.5),
+                  child: Center(
+                    child: Text(
+                      overlayText,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (isBatch && imagePaths.length > 1) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${previewPaths.length} files uploaded',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          SizedBox(height: 12.h),
+          Expanded(
+            child: GridView.builder(
+              physics: const NeverScrollableScrollPhysics(),
+              padding: EdgeInsets.zero,
+              shrinkWrap: true,
+              itemCount: min(imagePaths.length, 4),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12.w,
+                mainAxisSpacing: 12.h,
+                childAspectRatio: 1.0,
+              ),
+              itemBuilder: (context, index) {
+                final path = imagePaths[index];
+                final isLast = index == 3 && imagePaths.length > 4;
+                return buildTapImage(
+                  path,
+                  index,
+                  overlayText: isLast ? '+${imagePaths.length - 4} more' : null,
+                );
+              },
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (isBatch && imagePaths.length == 1) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${previewPaths.length} files uploaded',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          SizedBox(height: 12.h),
+          Expanded(
+            child: buildTapImage(imagePaths.first, 0),
+          ),
+        ],
+      );
+    }
+
+    if (isBatch && imagePaths.isEmpty) {
+      return Container(
+        color: Colors.grey[100],
+        padding: EdgeInsets.all(20.w),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.insert_drive_file,
+              color: Colors.grey[700],
+              size: 44.sp,
+            ),
+            SizedBox(height: 12.h),
+            Text(
+              '${previewPaths.length} files evaluated',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.grey[700],
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final filePath = previewPaths.first;
+    final isImage = _isImagePath(filePath);
+
+    if (isImage) {
+      return buildTapImage(filePath, 0);
+    }
+
+    return Container(
+      color: Colors.grey[100],
+      padding: EdgeInsets.all(20.w),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.picture_as_pdf_rounded,
+            color: Colors.grey[700],
+            size: 44.sp,
+          ),
+          SizedBox(height: 12.h),
+          Text(
+            filePath.split(RegExp(r'[\\/]+')).last,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.grey[700],
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _scorePercentage(String? score) {
     if (score == null) return '--';
     final match = RegExp(r'([0-9]+)\s*/\s*([0-9]+)').firstMatch(score);
@@ -1503,71 +1766,7 @@ Widget _buildMetricCompact({
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(18.r),
-                    child: Builder(
-                      builder: (context) {
-                        final isImage = RegExp(
-                                r'\.(jpe?g|png|gif|bmp|webp)$',
-                                caseSensitive: false)
-                            .hasMatch(widget.filePath);
-
-                        if (isImage) {
-                          return Image.file(
-                            File(widget.filePath),
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: Colors.grey[100],
-                                child: Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.broken_image,
-                                        color: Colors.grey[400],
-                                        size: 32.sp,
-                                      ),
-                                      SizedBox(height: 8.h),
-                                      Text(
-                                        'Failed to load image',
-                                        style: TextStyle(
-                                          color: Colors.grey[600],
-                                          fontSize: 12.sp,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          );
-                        }
-
-                        return Container(
-                          color: Colors.grey[100],
-                          padding: EdgeInsets.all(20.w),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.picture_as_pdf_rounded,
-                                color: Colors.grey[700],
-                                size: 44.sp,
-                              ),
-                              SizedBox(height: 12.h),
-                              Text(
-                                widget.filePath.split(RegExp(r'[\\/]+')).last,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.grey[700],
-                                  fontSize: 14.sp,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
+                    child: _buildFilePreview(context),
                   ),
                 ),
                 SizedBox(height: 24.h),

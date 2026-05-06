@@ -181,28 +181,6 @@ class CameraScreen extends HookWidget {
             ),
           ),
 
-          // Mode selector (Single/Batch) - hide in preview mode
-          if (!showPreview.value)
-            Positioned(
-              bottom: 180.h,
-              left: 0,
-              right: 0,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildModeButton('Single', isSingleMode.value, () {
-                    isSingleMode.value = true;
-                    capturedImages.value = [];
-                    showPreview.value = false;
-                  }),
-                  // SizedBox(width: 40.w),
-                  // _buildModeButton('Batch', !isSingleMode.value, () {
-                  //   isSingleMode.value = false;
-                  //   showPreview.value = false;
-                  // }),
-                ],
-              ),
-            ),
 
           // Bottom controls or send button
           if (showPreview.value && isSingleMode.value)
