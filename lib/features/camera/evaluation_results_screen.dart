@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:autograde_mobile/core/api/api_state.dart';
 import 'package:autograde_mobile/configs/routing/routes.dart';
@@ -24,13 +26,50 @@ class EvaluationResultsScreen extends StatefulWidget {
       _EvaluationResultsScreenState();
 }
 
-class _EvaluationResultsScreenState extends State<EvaluationResultsScreen> {
+class _EvaluationResultsScreenState extends State<EvaluationResultsScreen>
+    with TickerProviderStateMixin {
   late final EvaluateAnswerCubit _evalCubit;
+  late final AnimationController _heroController;
+  Timer? _statusTimer;
+  Timer? _tipTimer;
+  Timer? _progressTimer;
+
+  double _progress = 0.0;
+  int _statusIndex = 0;
+  int _tipIndex = 0;
+  final List<String> _statusMessages = [
+    'Scanning handwriting...',
+    'Reading keywords...',
+    'Comparing with marking scheme...',
+    'Detecting missing points...',
+    'Calculating score...',
+    'Preparing feedback...',
+    'Almost done...',
+  ];
+  final List<String> _tips = [
+    'Use bullet points for theory answers.',
+    'Underline keywords for clarity.',
+    'Add diagrams where relevant.',
+    'Manage time according to marks.',
+    'Definitions first, then explanation.',
+    'Practice improves speed and accuracy.',
+    'Keep answers concise and structured.',
+    'Use separate paragraphs for each point.',
+    'Check for neat and readable handwriting.',
+    'Link examples directly to the question.',
+  ];
+  final List<int> _targetStats = [3, 12, 8, 94];
+  List<int> _currentStats = [0, 0, 0, 0];
 
   @override
   void initState() {
     super.initState();
     _evalCubit = EvaluateAnswerCubit();
+    _heroController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 5),
+    )..repeat();
+    _startLoadingAnimations();
     _submitForEvaluation();
   }
 
@@ -39,8 +78,52 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen> {
     _evalCubit.evalAns(file: file, subject: widget.subject);
   }
 
+  void _startLoadingAnimations() {
+    _statusTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      setState(() {
+        _statusIndex = (_statusIndex + 1) % _statusMessages.length;
+      });
+    });
+
+    _tipTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      setState(() {
+        _tipIndex = (_tipIndex + 1) % _tips.length;
+      });
+    });
+
+    _progressTimer = Timer.periodic(const Duration(milliseconds: 180), (_) {
+      setState(() {
+        if (_progress < 95) {
+          final increment = _progress < 40
+              ? 3.5
+              : _progress < 80
+                  ? 1.3
+                  : 0.7;
+          _progress = min(95, _progress + increment);
+          _currentStats = _updateStatsFromProgress(_progress);
+        }
+      });
+    });
+  }
+
+  void _stopLoadingAnimations() {
+    _statusTimer?.cancel();
+    _tipTimer?.cancel();
+    _progressTimer?.cancel();
+  }
+
+  List<int> _updateStatsFromProgress(double progress) {
+    final int pages = 1 + min(3, (progress / 30).floor());
+    final concepts = min(16, 3 + (progress / 10).floor());
+    final points = min(12, 2 + (progress / 9).floor());
+    final confidence = min(99, 80 + (progress / 2).floor());
+    return [pages, concepts, points, confidence];
+  }
+
   @override
   void dispose() {
+    _heroController.dispose();
+    _stopLoadingAnimations();
     _evalCubit.close();
     super.dispose();
   }
@@ -208,6 +291,489 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen> {
     );
   }
 
+  Widget _buildWaitingHero() {
+    return AnimatedBuilder(
+      animation: _heroController,
+      builder: (context, child) {
+        final floatY = sin(_heroController.value * 2 * pi) * 12;
+        final floatX = cos(_heroController.value * 3 * pi) * 10;
+        return Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(24.w),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: const [Color(0xFF162145), Color(0xFF2E4C7E)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(28.r),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.12),
+                blurRadius: 30,
+                offset: Offset(0, 16.h),
+              ),
+            ],
+          ),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned(
+                top: -16.h,
+                right: -16.w,
+                child: Container(
+                  width: 88.w,
+                  height: 88.w,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [Colors.white.withOpacity(0.15), Colors.transparent],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: -18.w,
+                bottom: 16.h,
+                child: Container(
+                  width: 64.w,
+                  height: 64.w,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.08),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 36.h + floatY,
+                left: 24.w + floatX,
+                child: Transform.rotate(
+                  angle: _heroController.value * 0.4,
+                  child: Container(
+                    width: 100.w,
+                    height: 140.h,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20.r),
+                      color: Colors.white.withOpacity(0.12),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.18),
+                      ),
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.all(16.w),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 46.w,
+                            height: 8.h,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.65),
+                              borderRadius: BorderRadius.circular(4.r),
+                            ),
+                          ),
+                          SizedBox(height: 18.h),
+                          Container(
+                            width: 30.w,
+                            height: 6.h,
+                            color: Colors.white.withOpacity(0.4),
+                          ),
+                          SizedBox(height: 10.h),
+                          Container(
+                            width: 70.w,
+                            height: 6.h,
+                            color: Colors.white.withOpacity(0.4),
+                          ),
+                          const Spacer(),
+                          Row(
+                            children: [
+                              Container(
+                                width: 14.w,
+                                height: 14.w,
+                                decoration: BoxDecoration(
+                                  color: Colors.tealAccent,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              SizedBox(width: 10.w),
+                              Expanded(
+                                child: Container(
+                                  height: 8.h,
+                                  color: Colors.white.withOpacity(0.3),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 18.w,
+                bottom: 22.h,
+                child: Container(
+                  width: 74.w,
+                  height: 74.w,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [Colors.tealAccent.withOpacity(0.35), Colors.transparent],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 24.w,
+                bottom: 28.h,
+                child: Transform.rotate(
+                  angle: _heroController.value * 2 * pi,
+                  child: Container(
+                    width: 64.w,
+                    height: 64.w,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.tealAccent.withOpacity(0.65),
+                        width: 2,
+                      ),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Icons.auto_graph,
+                        size: 28.sp,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Evaluating Your Answer',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: 12.h),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 500),
+                    child: Text(
+                      _statusMessages[_statusIndex],
+                      key: ValueKey(_statusIndex),
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14.sp,
+                        height: 1.55,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 24.h),
+                  Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 14.w,
+                          vertical: 10.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(16.r),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.flash_on, color: Colors.tealAccent, size: 18.sp),
+                            SizedBox(width: 10.w),
+                            Text(
+                              '${_progress.round()}% Complete',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildProgressSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Progress',
+          style: TextStyle(
+            fontSize: 16.sp,
+            fontWeight: FontWeight.w700,
+            color: Colors.black87,
+          ),
+        ),
+        SizedBox(height: 14.h),
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(16.w),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20.r),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 16,
+                offset: Offset(0, 10.h),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${_progress.round()}% Complete',
+                    style: TextStyle(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  Text(
+                    'Finalizing results...',
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 16.h),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16.r),
+                child: LinearProgressIndicator(
+                  value: _progress / 100,
+                  minHeight: 12.h,
+                  backgroundColor: Colors.grey[200],
+                  valueColor: AlwaysStoppedAnimation(Colors.teal),
+                ),
+              ),
+              SizedBox(height: 12.h),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Fast scan',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12.sp),
+                  ),
+                  Text(
+                    'Preparing insights',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12.sp),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatCard({required String label, required int value, required IconData icon, required Color color}) {
+    return Expanded(
+      child: Container(
+        padding: EdgeInsets.all(16.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18.r),
+          border: Border.all(color: Colors.grey[200]!),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 14,
+              offset: Offset(0, 8.h),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 36.w,
+                  height: 36.w,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                  child: Icon(icon, color: color, size: 20.sp),
+                ),
+                Spacer(),
+              ],
+            ),
+            SizedBox(height: 18.h),
+            TweenAnimationBuilder<int>(
+              tween: IntTween(begin: 0, end: value),
+              duration: const Duration(milliseconds: 700),
+              builder: (context, animatedValue, child) {
+                return Text(
+                  '$animatedValue',
+                  style: TextStyle(
+                    fontSize: 24.sp,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
+                  ),
+                );
+              },
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              label,
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 13.sp,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTipCard() {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(18.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 20,
+            offset: Offset(0, 12.h),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(12.w),
+            decoration: BoxDecoration(
+              color: Colors.teal[50],
+              borderRadius: BorderRadius.circular(16.r),
+            ),
+            child: Icon(
+              Icons.lightbulb,
+              color: Colors.teal[700],
+              size: 24.sp,
+            ),
+          ),
+          SizedBox(width: 16.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Quick Tip',
+                  style: TextStyle(
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 450),
+                  transitionBuilder: (child, animation) {
+                    return FadeTransition(opacity: animation, child: child);
+                  },
+                  child: Text(
+                    _tips[_tipIndex],
+                    key: ValueKey(_tipIndex),
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      color: Colors.grey[700],
+                      height: 1.6,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMotivationSection() {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(20.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22.r),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Great effort! Your paper looks promising 👏',
+            style: TextStyle(
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w700,
+              color: Colors.black87,
+            ),
+          ),
+          SizedBox(height: 10.h),
+          Text(
+            'Personalized feedback is being prepared. Please stay here — results are almost ready.',
+            style: TextStyle(
+              fontSize: 14.sp,
+              color: Colors.grey[700],
+              height: 1.6,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFooterPulse() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(3, (index) {
+        final delay = (index + 1) * 0.2;
+        final scale = 0.8 + 0.2 * sin((_heroController.value + delay) * 2 * pi);
+        return Container(
+          margin: EdgeInsets.symmetric(horizontal: 6.w),
+          width: 12.w,
+          height: 12.w,
+          decoration: BoxDecoration(
+            color: Colors.teal.withOpacity(0.85),
+            shape: BoxShape.circle,
+          ),
+          transform: Matrix4.identity()..scale(scale, scale),
+        );
+      }),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -232,6 +798,64 @@ class _EvaluationResultsScreenState extends State<EvaluationResultsScreen> {
       body: BlocBuilder<EvaluateAnswerCubit, ApiState>(
         bloc: _evalCubit,
         builder: (context, state) {
+          if (state is ApiLoadingState) {
+            return SingleChildScrollView(
+              padding: EdgeInsets.all(20.w),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildWaitingHero(),
+                  SizedBox(height: 24.h),
+                  _buildProgressSection(),
+                  SizedBox(height: 24.h),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildStatCard(
+                        label: 'Pages scanned',
+                        value: _currentStats[0],
+                        icon: Icons.menu_book,
+                        color: Colors.indigo,
+                      ),
+                      SizedBox(width: 14.w),
+                      _buildStatCard(
+                        label: 'Key concepts',
+                        value: _currentStats[1],
+                        icon: Icons.lightbulb,
+                        color: Colors.teal,
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 14.h),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildStatCard(
+                        label: 'Points matched',
+                        value: _currentStats[2],
+                        icon: Icons.check_circle,
+                        color: Colors.blue,
+                      ),
+                      SizedBox(width: 14.w),
+                      _buildStatCard(
+                        label: 'Confidence',
+                        value: _currentStats[3],
+                        icon: Icons.shield,
+                        color: Colors.green,
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 24.h),
+                  _buildTipCard(),
+                  SizedBox(height: 24.h),
+                  _buildMotivationSection(),
+                  SizedBox(height: 28.h),
+                  Center(child: _buildFooterPulse()),
+                ],
+              ),
+            );
+          }
+
           return SingleChildScrollView(
             padding: EdgeInsets.all(20.w),
             child: Column(
