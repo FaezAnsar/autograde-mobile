@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
 class BatchPhotoPreviewScreen extends HookWidget {
   final List<String> imagePaths;
@@ -53,258 +52,159 @@ class BatchPhotoPreviewScreen extends HookWidget {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
+        elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: Colors.white, size: 24.sp),
           onPressed: () => context.pop(),
         ),
         title: Text(
-          'CamScanner ${DateFormat('MM-dd-yyyy HH.mm').format(DateTime.now())}',
+          'Preview Images',
           style: TextStyle(
             color: Colors.white,
             fontSize: 16.sp,
             fontWeight: FontWeight.w400,
           ),
         ),
-        // actions: [
-        //   TextButton(
-        //     onPressed: () {
-        //       // TODO: Implement compare functionality
-        //     },
-        //     child: Row(
-        //       mainAxisSize: MainAxisSize.min,
-        //       children: [
-        //         Icon(Icons.compare_arrows, color: Colors.white, size: 20.sp),
-        //         SizedBox(width: 4.w),
-        //         Text(
-        //           'Compare',
-        //           style: TextStyle(color: Colors.white, fontSize: 14.sp),
-        //         ),
-        //       ],
-        //     ),
-        //   ),
-        // ],
-        // elevation: 0,
       ),
-      body: Stack(
+      body: Column(
         children: [
-          // Main photo display
-          Positioned.fill(
+          Expanded(
             child: PageView.builder(
               controller: pageController,
               onPageChanged: (index) => currentIndex.value = index,
               itemCount: imagePaths.length,
               itemBuilder: (context, index) {
-                return Container(
-                  margin: EdgeInsets.symmetric(
-                    horizontal: 20.w,
-                    vertical: 40.h,
-                  ),
-                  child: Stack(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12.r),
+                return Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 24.h),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(18.r),
+                    child: Container(
+                      color: Colors.black,
+                      child: InteractiveViewer(
+                        minScale: 1,
+                        maxScale: 4,
                         child: Image.file(
                           File(imagePaths[index]),
                           fit: BoxFit.contain,
+                          width: double.infinity,
+                          height: double.infinity,
                           errorBuilder: (context, error, stackTrace) {
                             return Container(
-                              color: Colors.grey[800],
-                              child: const Center(
-                                child: Icon(
-                                  Icons.broken_image,
-                                  color: Colors.white54,
-                                  size: 50,
-                                ),
+                              color: Colors.grey[900],
+                              alignment: Alignment.center,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.broken_image, color: Colors.white54, size: 48.sp),
+                                  SizedBox(height: 12.h),
+                                  Text(
+                                    'Unable to load image',
+                                    style: TextStyle(color: Colors.white54, fontSize: 14.sp),
+                                  ),
+                                ],
                               ),
                             );
                           },
                         ),
                       ),
-                      Positioned(
-                        top: 10.h,
-                        left: 10.w,
-                        child: GestureDetector(
-                          onTap: () => _showDeleteDialog(
-                            context,
-                            currentIndex.value,
-                            imagePaths,
-                          ),
-                          child: Container(
-                            padding: EdgeInsets.all(8.r),
-                            decoration: BoxDecoration(
-                              color: Colors.black54,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.close,
-                              color: Colors.white,
-                              size: 20.sp,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 );
               },
             ),
           ),
-
-          // Delete button (top left of image)
-          if (imagePaths.isNotEmpty)
-            // Navigation arrows and page indicator
-            if (imagePaths.length > 1)
-              Positioned(
-                bottom: 120.h,
-                left: 0,
-                right: 0,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          if (imagePaths.length > 1)
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 20.w),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildArrowButton(
+                    icon: Icons.chevron_left,
+                    enabled: currentIndex.value > 0,
+                    onTap: () {
+                      if (currentIndex.value > 0 && pageController.hasClients) {
+                        pageController.previousPage(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      }
+                    },
+                  ),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(20.r),
+                    ),
+                    child: Text(
+                      '${currentIndex.value + 1}/${imagePaths.length}',
+                      style: TextStyle(color: Colors.white, fontSize: 14.sp),
+                    ),
+                  ),
+                  _buildArrowButton(
+                    icon: Icons.chevron_right,
+                    enabled: currentIndex.value < imagePaths.length - 1,
+                    onTap: () {
+                      if (currentIndex.value < imagePaths.length - 1 && pageController.hasClients) {
+                        pageController.nextPage(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(22.r)),
+            ),
+            padding: EdgeInsets.fromLTRB(20.w, 18.h, 20.w, 20.h),
+            child: Column(
+              children: [
+                Text(
+                  'Confirm each selected page before evaluation.',
+                  style: TextStyle(color: const Color(0xFF333333), fontSize: 14.sp),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 16.h),
+                Row(
                   children: [
-                    // Previous button
-                    GestureDetector(
-                      onTap: currentIndex.value > 0
-                          ? () {
-                              if (pageController.hasClients) {
-                                pageController.previousPage(
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeInOut,
-                                );
-                              }
-                            }
-                          : null,
-                      child: Container(
-                        padding: EdgeInsets.all(12.r),
-                        decoration: BoxDecoration(
-                          color: currentIndex.value > 0
-                              ? Colors.white24
-                              : Colors.transparent,
-                          shape: BoxShape.circle,
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => context.pop(),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0xFF1A1A1A)),
+                          foregroundColor: const Color(0xFF1A1A1A),
+                          padding: EdgeInsets.symmetric(vertical: 14.h),
                         ),
-                        child: Icon(
-                          Icons.arrow_back_ios,
-                          color: currentIndex.value > 0
-                              ? Colors.white
-                              : Colors.white38,
-                          size: 20.sp,
+                        child: Text(
+                          'Clear',
+                          style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
                         ),
                       ),
                     ),
-
-                    // Page indicator
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 16.w,
-                        vertical: 8.h,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black54,
-                        borderRadius: BorderRadius.circular(20.r),
-                      ),
-                      child: Text(
-                        '${currentIndex.value + 1}/${imagePaths.length}',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w500,
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => _processAllPhotos(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1A1A1A),
+                          padding: EdgeInsets.symmetric(vertical: 14.h),
                         ),
-                      ),
-                    ),
-
-                    // Next button
-                    GestureDetector(
-                      onTap: currentIndex.value < imagePaths.length - 1
-                          ? () {
-                              if (pageController.hasClients) {
-                                pageController.nextPage(
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeInOut,
-                                );
-                              }
-                            }
-                          : null,
-                      child: Container(
-                        padding: EdgeInsets.all(12.r),
-                        decoration: BoxDecoration(
-                          color: currentIndex.value < imagePaths.length - 1
-                              ? Colors.white24
-                              : Colors.transparent,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.arrow_forward_ios,
-                          color: currentIndex.value < imagePaths.length - 1
-                              ? Colors.white
-                              : Colors.white38,
-                          size: 20.sp,
+                        child: Text(
+                          'Evaluate',
+                          style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
                         ),
                       ),
                     ),
                   ],
                 ),
-              ),
-
-          // Bottom toolbar
-          Positioned(
-            bottom: 30.h,
-            left: 0,
-            right: 0,
-            child: Container(
-              margin: EdgeInsets.symmetric(horizontal: 20.w),
-              padding: EdgeInsets.symmetric(vertical: 16.h),
-              decoration: BoxDecoration(
-                color: Colors.black87,
-                borderRadius: BorderRadius.circular(25.r),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildToolbarButton(
-                    icon: Icons.camera_alt,
-                    label: 'Retake',
-                    onTap: () => context.pop(),
-                  ),
-                  _buildToolbarButton(
-                    icon: Icons.rotate_left,
-                    label: 'Left',
-                    onTap: () {
-                      // TODO: Implement rotate left
-                    },
-                  ),
-                  _buildToolbarButton(
-                    icon: Icons.filter,
-                    label: 'Filter',
-                    onTap: () {
-                      // TODO: Implement filter
-                    },
-                  ),
-                  _buildToolbarButton(
-                    icon: Icons.crop,
-                    label: 'Crop',
-                    onTap: () {
-                      // TODO: Implement crop
-                    },
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      // TODO: Implement save/process all photos
-                      _processAllPhotos(context);
-                    },
-                    child: Container(
-                      padding: EdgeInsets.all(16.r),
-                      decoration: const BoxDecoration(
-                        color: Colors.tealAccent,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.check,
-                        color: Colors.black,
-                        size: 24.sp,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              ],
             ),
           ),
         ],
@@ -312,27 +212,22 @@ class BatchPhotoPreviewScreen extends HookWidget {
     );
   }
 
-  Widget _buildToolbarButton({
+  Widget _buildArrowButton({
     required IconData icon,
-    required String label,
+    required bool enabled,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: Colors.white, size: 24.sp),
-          SizedBox(height: 4.h),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 10.sp,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-        ],
+      onTap: enabled ? onTap : null,
+      child: Container(
+        width: 46.w,
+        height: 46.w,
+        decoration: BoxDecoration(
+          color: enabled ? Colors.white24 : Colors.white10,
+          shape: BoxShape.circle,
+          border: Border.all(color: enabled ? Colors.white : Colors.white30),
+        ),
+        child: Icon(icon, color: enabled ? Colors.white : Colors.white38, size: 24.sp),
       ),
     );
   }
@@ -349,46 +244,4 @@ class BatchPhotoPreviewScreen extends HookWidget {
       },
     );
   }
-}
-
-void _showDeleteDialog(
-  BuildContext context,
-  int index,
-  List<String> imagePaths,
-) {
-  if (index < 0 || index >= imagePaths.length) return;
-
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: const Text(
-          'Delete Photo?',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: Text(
-          'This will permanently delete this photo from your batch.',
-          style: TextStyle(color: Colors.white70, fontSize: 14.sp),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => context.pop(),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.tealAccent),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              // TODO: Implement delete functionality
-              // Remove the image from the list and update UI
-              context.pop();
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      );
-    },
-  );
 }
